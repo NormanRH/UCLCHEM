@@ -12,6 +12,7 @@ MODULE chemistry
 USE physics
 USE dvode_f90_m
 USE network
+USE heating
 IMPLICIT NONE
    !These integers store the array index of important species and reactions, x is for ions    
     integer :: nh,nh2,nc,ncx,no,nn,ns,nsx,nhe,nco,nmg,nf,nh2o,nsi,nsix,ncl,nclx,nch3oh,np
@@ -91,7 +92,7 @@ IMPLICIT NONE
 CONTAINS
 !This gets called immediately by main so put anything here that you want to happen before the time loop begins, reader is necessary.
     SUBROUTINE initializeChemistry
-        NEQ=nspec+1
+        NEQ=nspec+2 !one ODE per species +1 each for temperature and density
         IF (ALLOCATED(abund)) DEALLOCATE(abund,vdiff,mantle)
         ALLOCATE(abund(NEQ,points),vdiff(nspec))
         CALL reader
@@ -115,7 +116,8 @@ CONTAINS
 
             !abund(nfe,:) = ffe
             !abund(nna,:) = fna
-            abund(nspec+1,:)=density      
+            abund(NEQ-1,:)=temp
+            abund(NEQ,:)=density      
 
             !Decide how much iron is initiall ionized using parameters.f90
             SELECT CASE (ion)
@@ -203,7 +205,7 @@ CONTAINS
         IF (readAbunds .eq. 1) THEN
             DO l=1,points
                 READ(7,*)
-                READ(7,7000) abund(nspec+1,l),junktemp,av(l)
+                READ(7,7000) abund(NEQ,l),junktemp,av(l)
                 READ(7,*)
                 READ(7,7010) h2form,fc,fo,&
                             &fmg,fhe,dstep
@@ -275,8 +277,11 @@ CONTAINS
 
     SUBROUTINE updateChemistry
     !Called every time/depth step and updates the abundances of all the species
+        abund(NEQ-1,dstep)=temp(dstep)
+        write(*,*) "start temperature",temp(dstep),abund(NEQ-1,dstep)
+
         !allow option for dens to have been changed elsewhere.
-        IF (collapse .ne. 1) abund(nspec+1,dstep)=density(dstep)
+        IF (collapse .ne. 1) abund(NEQ,dstep)=density(dstep)
         !y is at final value of previous depth iteration so set to initial values of this depth with abund
         !reset other variables for good measure        
         h2form = 1.0d-17*dsqrt(temp(dstep))
@@ -299,7 +304,9 @@ CONTAINS
 
         !1.d-30 stops numbers getting too small for fortran.
         WHERE(abund<1.0d-30) abund=1.0d-30
-        density(dstep)=abund(nspec+1,dstep)
+        density(dstep)=abund(NEQ,dstep)
+        temp(dstep)=abund(NEQ-1,dstep)
+        write(*,*) "temperature",temp(dstep),abund(NEQ-1,dstep)
     END SUBROUTINE updateChemistry
 
     SUBROUTINE integrate
@@ -311,7 +318,6 @@ CONTAINS
             reltol=1e-4 !relative tolerance effectively sets decimal place accuracy
             abstol=1.0d-14*abund(:,dstep) !absolute tolerances depend on value of abundance
             WHERE(abstol<1d-30) abstol=1d-30 ! to a minimum degree
-
             !get reaction rates for this iteration
             CALL calculateReactionRates
             !Call the integrator.
@@ -358,7 +364,7 @@ CONTAINS
         INCLUDE 'odes.f90'
 
         !updated just in case temp changed
-        h2form=1.0d-17*dsqrt(temp(dstep))
+        h2form=1.0d-17*dsqrt(Y(NEQ-1))
 
         !H2 formation should occur at both steps - however note that here there is no 
         !temperature dependence. y(nh) is hydrogen fractional abundance.
@@ -367,8 +373,11 @@ CONTAINS
         ydot(nh2) = ydot(nh2) + h2form*y(nh)*D - h2dis*y(nh2)
         !                       h2 formation  - h2-photodissociation
 
+        !get temperature change from heating module
+        ydot(NEQ-1)=getHeatingRate(Y(NEQ-1))+getCoolingRate()
         ! get density change from physics module to send to DLSODE
         IF (collapse .eq. 1) ydot(NEQ)=densdot(y(NEQ))
+
     END SUBROUTINE F
 
 
@@ -376,7 +385,7 @@ CONTAINS
         open(79,file='output/debuglog',status='unknown')       !debug file.
         write(79,*) "Integrator failed, printing relevant debugging information"
         write(79,*) "dens",density(dstep)
-        write(79,*) "density in integration array",abund(nspec+1,dstep)
+        write(79,*) "density in integration array",abund(NEQ,dstep)
         write(79,*) "Av", av(dstep)
         write(79,*) "Mantle", mantle(dstep)
         write(79,*) "Temp", temp(dstep)

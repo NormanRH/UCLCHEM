@@ -103,7 +103,7 @@ CONTAINS
         ELSE IF (timeInYears .gt. 1000) THEN
             targetTime=(timeInYears+100.0)*SECONDS_PER_YEAR
         ELSE IF (timeInYears .gt. 0.0) THEN
-            targetTime=(timeInYears*10.0)*SECONDS_PER_YEAR
+            targetTime=(timeInYears*2)*SECONDS_PER_YEAR
         ELSE
             targetTime=3.16d7*10.d-8
         ENDIF
