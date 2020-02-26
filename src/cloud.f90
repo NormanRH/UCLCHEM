@@ -16,6 +16,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 MODULE physics
     USE network
+    USE constants
     IMPLICIT NONE
     !Use main loop counters in calculations so they're kept here
     INTEGER :: dstep,points
@@ -40,10 +41,7 @@ MODULE physics
     DOUBLE PRECISION,PARAMETER :: volctemp(6)=(/84.0,86.3,88.2,89.5,90.4,92.2/)
     DOUBLE PRECISION,PARAMETER :: codestemp(6)=(/95.0,97.5,99.4,100.8,101.6,103.4/)
 
-    DOUBLE PRECISION, allocatable :: av(:),coldens(:),temp(:),density(:),monoFracCopy(:)
-    !Everything should be in cgs units. Helpful constants and conversions below
-    DOUBLE PRECISION,PARAMETER ::PI=3.141592654,mh=1.67e-24,K_BOLTZ_SI=1.38d-23
-    DOUBLE PRECISION, PARAMETER :: pc=3.086d18,SECONDS_PER_YEAR=3.16d7
+    DOUBLE PRECISION, allocatable :: av(:),coldens(:),gasTemp(:),density(:),monoFracCopy(:)
 
 CONTAINS
 !THIS IS WHERE THE REQUIRED PHYSICS ELEMENTS BEGIN.
@@ -55,14 +53,14 @@ CONTAINS
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     SUBROUTINE initializePhysics
         ! Modules not restarted in python wraps so best to reset everything manually.
-        IF (ALLOCATED(av)) DEALLOCATE(av,coldens,temp,density,monoFracCopy)
-        ALLOCATE(av(points),coldens(points),temp(points),density(points),monoFracCopy(size(monoFractions)))
+        IF (ALLOCATED(av)) DEALLOCATE(av,coldens,gasTemp,density,monoFracCopy)
+        ALLOCATE(av(points),coldens(points),gasTemp(points),density(points),monoFracCopy(size(monoFractions)))
         coflag=0 !reset sublimation
         monoFracCopy=monoFractions !reset monofractions
 
         !Set up basic physics variables
         cloudSize=(rout-rin)*pc
-        temp=initialTemp
+        gasTemp=initialTemp
 
         !Set up collapse modes.
         SELECT CASE(collapse)
@@ -95,11 +93,11 @@ CONTAINS
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     SUBROUTINE updateTargetTime
         IF (timeInYears .gt. 1.0d6) THEN !code in years for readability, targetTime in s
-            targetTime=(timeInYears+1.0d4)*SECONDS_PER_YEAR
+             targetTime=(timeInYears+1.0d3)*SECONDS_PER_YEAR
         ELSE  IF (timeInYears .gt. 1.0d5) THEN
-            targetTime=(timeInYears+1.0d4)*SECONDS_PER_YEAR
+             targetTime=(timeInYears+1.0d3)*SECONDS_PER_YEAR
         ELSE IF (timeInYears .gt. 1.0d4) THEN
-            targetTime=(timeInYears+1000.0)*SECONDS_PER_YEAR
+             targetTime=(timeInYears+1000.0)*SECONDS_PER_YEAR
         ELSE IF (timeInYears .gt. 1000) THEN
             targetTime=(timeInYears+100.0)*SECONDS_PER_YEAR
         ELSE IF (timeInYears .gt. 0.0) THEN
@@ -127,13 +125,13 @@ CONTAINS
         !calculate the Av using an assumed extinction outside of core (baseAv), depth of point and density
         av(dstep)= baseAv +coldens(dstep)/1.6d21
 
-        IF (phase .eq. 2 .and. temp(dstep) .lt. maxTemp) THEN
+        IF (phase .eq. 2 .and. gasTemp(dstep) .lt. maxTemp) THEN
         !Below we include temperature profiles for hot cores, selected using tempindx
         !They are taken from Viti et al. 2004 with an additional distance dependence from Nomura and Millar 2004.
         !It takes the form T=A(t^B)*[(d/R)^-0.5], where A and B are given below for various stellar masses
-            temp(dstep)=(cloudSize/(rout*pc))*(real(dstep)/real(points))
-            temp(dstep)=temp(dstep)**(-0.5)
-            temp(dstep)=initialTemp + ((tempa(tempindx)*(currentTime/SECONDS_PER_YEAR)**tempb(tempindx))*temp(dstep))
+            gasTemp(dstep)=(cloudSize/(rout*pc))*(real(dstep)/real(points))
+            gasTemp(dstep)=gasTemp(dstep)**(-0.5)
+            gasTemp(dstep)=initialTemp + ((tempa(tempindx)*(currentTime/SECONDS_PER_YEAR)**tempb(tempindx))*gasTemp(dstep))
         END IF
     END SUBROUTINE updatePhysics
 
@@ -143,16 +141,16 @@ CONTAINS
     ! In hot core that means following thermalEvaporation subroutine.                 !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     SUBROUTINE sublimation(abund)
-        DOUBLE PRECISION :: abund(nspec+1,points)
+        DOUBLE PRECISION :: abund(:,:)
         INTENT(INOUT) :: abund
 
         IF (instantSublimation .eq. 1) THEN
             instantSublimation=0
             CALL totalSublimation(abund)
         ELSE IF (coflag .ne. 2) THEN
-            IF (temp(dstep) .gt. solidtemp(tempindx) .and. solidflag .ne. 2) solidflag=1
-            IF (temp(dstep) .gt. volctemp(tempindx) .and. volcflag .ne. 2) volcflag=1
-            IF (temp(dstep) .gt. codestemp(tempindx)) coflag=1
+            IF (gasTemp(dstep) .gt. solidtemp(tempindx) .and. solidflag .ne. 2) solidflag=1
+            IF (gasTemp(dstep) .gt. volctemp(tempindx) .and. volcflag .ne. 2) volcflag=1
+            IF (gasTemp(dstep) .gt. codestemp(tempindx)) coflag=1
             CALL thermalEvaporation(abund)
         END IF
     END SUBROUTINE sublimation
@@ -179,7 +177,7 @@ CONTAINS
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     SUBROUTINE thermalEvaporation(abund)
-    DOUBLE PRECISION :: abund(nspec+1,points)
+    DOUBLE PRECISION :: abund(nspec+2,points)
     INTEGER :: i
     INTENT(INOUT) :: abund
     !Evaporation is based on Viti et al. 2004. A proportion of the frozen species is released into the gas phase
@@ -210,7 +208,7 @@ CONTAINS
     END SUBROUTINE thermalEvaporation
 
     SUBROUTINE partialSublimation(fractions, abund)
-        DOUBLE PRECISION :: abund(nspec+1,points)
+        DOUBLE PRECISION :: abund(:,:)
         DOUBLE PRECISION :: fractions(:)
 
         abund(gasGrainList,dstep)=abund(gasGrainList,dstep)+fractions*abund(grainList,dstep)
@@ -219,13 +217,13 @@ CONTAINS
     END SUBROUTINE partialSublimation
 
     SUBROUTINE totalSublimation(abund)
-        DOUBLE PRECISION :: abund(nspec+1,points)
+        DOUBLE PRECISION :: abund(:,:)
         abund(gasGrainList,dstep)=abund(gasGrainList,dstep)+abund(grainList,dstep)
         abund(grainList,dstep)=1d-30
     END SUBROUTINE totalSublimation
 
     SUBROUTINE bindingEnergyEvap(abund)
-        DOUBLE PRECISION :: abund(nspec+1,points)
+        DOUBLE PRECISION :: abund(:,:)
         double precision, parameter :: SURFACE_SITE_DENSITY = 1.5d15
         INTENT(INOUT) :: abund
         INTEGER :: i
@@ -236,7 +234,7 @@ CONTAINS
         DO i=lbound(grainList,1),ubound(grainList,1)
             speci=grainList(i)
             en=bindingEnergy(i)*K_BOLTZ_SI
-            expdust=bindingEnergy(i)/temp(dstep)
+            expdust=bindingEnergy(i)/gasTemp(dstep)
             newm = mass(speci)*1.66053e-27
             freq = dsqrt((2*(SURFACE_SITE_DENSITY)*en)/((pi**2)*newm))
             kevap=freq*exp(-expdust)

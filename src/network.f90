@@ -1,6 +1,9 @@
 MODULE network
     IMPLICIT NONE
-    integer, parameter :: nSpec=215, nReac=2456
+    INTEGER, PARAMETER :: nSpec=215, nReac=2456
+    INTEGER, PARAMETER ::nelec=215,ncx=10,nhx=2,nh2=3,nsix=71,nsx=103,nclx=117,nco=64&
+&,nhex=7,nhcox=75,nh3ox=38,nh3x=5,nh=1,nhe=6,nc=9,nn=15,no=26,ns=102,ncl=116,nmg=41,nsi=70
+    INTEGER, PARAMETER ::nR_H2x_H=194,nR_C_hv=1977
 character(Len=8), parameter ::     specname (215)=(/"H       "&
     &,"H+      ","H2      ","H2+     ","H3+     ","HE      ","HE+     "&
     &,"HEH+    ","C       ","C+      ","CH      ","CH+     ","CH2     "&

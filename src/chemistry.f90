@@ -13,58 +13,58 @@ USE physics
 USE dvode_f90_m
 USE network
 USE heating
+USE constants
 IMPLICIT NONE
    !These integers store the array index of important species and reactions, x is for ions    
-    integer :: nh,nh2,nc,ncx,no,nn,ns,nsx,nhe,nco,nmg,nf,nh2o,nsi,nsix,ncl,nclx,nch3oh,np
     integer :: nrco,njunk,evapevents,ngrainco,readAbunds
     !loop counters    
     integer :: i,j,l,writeStep,writeCounter=0
 
     !Array to store reaction rates
-    double precision :: rate(nreac)
+    REAL(dp) :: rate(nreac)
     
     !Option column output
     character(LEN=15),allocatable :: outSpecies(:)
-    logical :: columnFlag
+    logical :: columnFlag,heatingFlag
     integer :: nout
     integer, allocatable :: outIndx(:)
 
 
     !DLSODE variables    
     integer :: ITASK,ISTATE,NEQ,MXSTEP
-    double precision :: reltol
-    double precision, allocatable :: abstol(:)
+    REAL(dp) :: reltol
+    REAL(dp), allocatable :: abstol(:)
     TYPE(VODE_OPTS) :: OPTIONS
 
     !initial fractional elemental abudances and arrays to store abundances
-    double precision :: fh,fhe,fc,fo,fn,fs,fmg,fsi,fcl,fp,ff,h2col,cocol,junk1,junk2
-    double precision,allocatable :: abund(:,:),mantle(:)
+    REAL(dp) :: fh,fhe,fc,fo,fn,fs,fmg,fsi,fcl,fp,ff,h2col,cocol,junk1,junk2
+    REAL(dp),allocatable :: abund(:,:),mantle(:)
     
     !Variables controlling chemistry
-    double precision :: radfield,zeta,fr,omega,grainArea,cion,h2form,h2dis
-    double precision :: ebmaxh2,epsilon,ebmaxcrf,ebmaxcr,phi,ebmaxuvcr,uvy,uvcreff
-    double precision, allocatable ::vdiff(:)
+    REAL(dp) :: radfield,zeta,fr,omega,grainArea,cion,h2form,h2dis,tempDot
+    REAL(dp) :: ebmaxh2,epsilon,ebmaxcrf,ebmaxcr,phi,ebmaxuvcr,uvy,uvcreff
+    REAL(dp), allocatable ::vdiff(:)
 
     !Variables for self-shielding of CO and H2
     !dopw = doppler width (in s-1) of a typical transition
     !(assuming turbulent broadening with beta=3e5cms-1)
     !radw = radiative line width of typ. transition (in s-1)
     !fosc = oscillator strength of a typical transition
-    double precision  :: dopw=3.0e10,radw=8.0e07,xl=1000.0,fosc  = 1.0d-2,taud
+    REAL(dp)  :: dopw=3.0e10,radw=8.0e07,xl=1000.0,fosc  = 1.0d-2,taud
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !variables for diffusion reactions on the grains, CGS unless otherwise stated.
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     LOGICAL, parameter :: DIFFUSE_REACT_COMPETITION=.True., GRAINS_HAVE_ICE=.True.
-    double precision, parameter :: GAS_DUST_MASS_RATIO=100.0,REDUCED_PLANCK=1.054571628d-27,AMU=1.66053892d-24
-    double precision, parameter :: K_BOLTZ=1.3806588d-16,GRAIN_AREA=2.4d-22,GRAIN_RADIUS=1.d-5 
-    double precision, parameter :: CHEMICAL_BARRIER_THICKNESS = 1.40d-8  !gre Parameter used to compute the probability for a surface reaction with 
+    REAL(dp), parameter :: GAS_DUST_MASS_RATIO=100.0,AMU=1.66053892d-24
+    REAL(dp), parameter :: GRAIN_AREA=2.4d-22,GRAIN_RADIUS=1.d-5 
+    REAL(dp), parameter :: CHEMICAL_BARRIER_THICKNESS = 1.40d-8  !gre Parameter used to compute the probability for a surface reaction with 
     !! activation energy to occur through quantum tunneling (Hasegawa et al. Eq 6 (1992).)
-    double precision, parameter :: SURFACE_SITE_DENSITY = 1.5d15 ! site density on one grain [cm-2]
-    double precision, parameter :: VDIFF_PREFACTOR=2.0*K_BOLTZ*SURFACE_SITE_DENSITY/PI/PI/AMU
-    double precision, parameter :: GRAIN_DENSITY = 3.0 ! Mass density of a dust grain
-    double precision, parameter :: NUM_SITES_PER_GRAIN = GRAIN_RADIUS*GRAIN_RADIUS*SURFACE_SITE_DENSITY*4.0*PI
-    double precision, parameter :: GAS_DUST_DENSITY_RATIO = (4.0*PI*(GRAIN_RADIUS**3)*GRAIN_DENSITY*GAS_DUST_MASS_RATIO)/(3.0 * AMU)
+    REAL(dp), parameter :: SURFACE_SITE_DENSITY = 1.5d15 ! site density on one grain [cm-2]
+    REAL(dp), parameter :: VDIFF_PREFACTOR=2.0*K_BOLTZ*SURFACE_SITE_DENSITY/PI/PI/AMU
+    REAL(dp), parameter :: GRAIN_DENSITY = 3.0 ! Mass density of a dust grain
+    REAL(dp), parameter :: NUM_SITES_PER_GRAIN = GRAIN_RADIUS*GRAIN_RADIUS*SURFACE_SITE_DENSITY*4.0*PI
+    REAL(dp), parameter :: GAS_DUST_DENSITY_RATIO = (4.0*PI*(GRAIN_RADIUS**3)*GRAIN_DENSITY*GAS_DUST_MASS_RATIO)/(3.0 * AMU)
  
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !CO and H2 self-shielding
@@ -72,7 +72,7 @@ IMPLICIT NONE
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     logical :: startr=.True.
     integer,parameter :: dimco=7, dimh2=6
-    double precision :: corates(7,6)=reshape((/0.000d+00, -1.408d-02, -1.099d-01, -4.400d-01,&
+    REAL(dp) :: corates(7,6)=reshape((/0.000d+00, -1.408d-02, -1.099d-01, -4.400d-01,&
      &  -1.154d+00, -1.888d+00, -2.760d+00,&
      &  -8.539d-02, -1.015d-01, -2.104d-01, -5.608d-01,&
      &  -1.272d+00, -1.973d+00, -2.818d+00,&
@@ -84,10 +84,10 @@ IMPLICIT NONE
      &  -2.305d+00, -3.034d+00, -3.758d+00,&
      &  -3.883d+00, -3.888d+00, -3.936d+00, -4.197d+00,&
      &  -4.739d+00, -5.165d+00, -5.441d+00 /),shape(corates))
-    double precision :: y2r(7,6)
-    double precision :: ncogr(dimco) =(/12.0d+00, 13.0d+00, 14.0d+00, 15.0d+00,&
+    REAL(dp) :: y2r(7,6)
+    REAL(dp) :: ncogr(dimco) =(/12.0d+00, 13.0d+00, 14.0d+00, 15.0d+00,&
       &16.0d+00, 17.0d+00, 18.0d+00 /)
-    double precision :: nh2gr(dimh2)=(/18.0d+00, 19.0d+00, 20.0d+00, 21.0d+00,&
+    REAL(dp) :: nh2gr(dimh2)=(/18.0d+00, 19.0d+00, 20.0d+00, 21.0d+00,&
        &22.0d+00, 23.0d+00 /)
 CONTAINS
 !This gets called immediately by main so put anything here that you want to happen before the time loop begins, reader is necessary.
@@ -100,7 +100,7 @@ CONTAINS
         !otherwise reader will fix it
         IF (readAbunds.eq.0) THEN
             !ensure abund is initially zero
-            abund= 0.
+            abund= 0.0D0
             !As default, have half in molecular hydrogen and half in atomic hydrogen
             abund(nh2,:) = 0.5*(0.5*(1.0e0-fh))
             abund(nh,:) = (0.5*(1.0e0-fh))     
@@ -116,7 +116,7 @@ CONTAINS
 
             !abund(nfe,:) = ffe
             !abund(nna,:) = fna
-            abund(NEQ-1,:)=temp
+            abund(NEQ-1,:)=gasTemp
             abund(NEQ,:)=density      
 
             !Decide how much iron is initiall ionized using parameters.f90
@@ -158,14 +158,14 @@ CONTAINS
         END IF
         !OPTIONS = SET_OPTS(METHOD_FLAG=22, ABSERR_VECTOR=abstol, RELERR=reltol,USER_SUPPLIED_JACOBIAN=.FALSE.)
         
-
+        CALL initializeHeating
     END SUBROUTINE initializeChemistry
 
 !Reads input reaction and species files as well as the final step of previous run if this is phase 2
     SUBROUTINE reader
         IMPLICIT NONE
         integer i,j,l,m
-        double precision junktemp
+        REAL(dp) junktemp
 
         IF (ALLOCATED(outIndx)) DEALLOCATE(outIndx)
         IF (columnFlag) THEN
@@ -173,32 +173,13 @@ CONTAINS
             ALLOCATE(outIndx(nout))
         END IF
         !assign array indices for important species to the integers used to store them.
-        DO i=1,nspec
-            IF (specname(i).eq.'H')   nh  = i
-            IF (specname(i).eq.'H2')  nh2 = i
-            IF (specname(i).eq.'C')   nc  = i
-            IF (specname(i).eq.'C+')  ncx = i
-            IF (specname(i).eq.'O')   no  = i
-            IF (specname(i).eq.'N')   nn  = i
-            IF (specname(i).eq.'S+')  nsx  = i
-            IF (specname(i).eq.'HE')  nhe = i
-            IF (specname(i).eq.'CO')  nco = i
-            IF (specname(i).eq.'MG')  nmg = i
-            IF (specname(i).eq.'H2O') nh2o = i
-            IF (specname(i).eq.'SI')  nsi = i
-            IF (specname(i).eq.'SI+') nsix= i
-            IF (specname(i).eq.'CL')  ncl = i
-            IF (specname(i).eq.'CL+') nclx= i
-            IF (specname(i).eq.'CH3OH') nch3oh= i
-            IF (specname(i).eq.'#CO') ngrainco = i
-            IF (specname(i).eq. 'P') np=i
-            IF (specname(i).eq.'F') nf=i
-            IF (columnFlag) THEN
+        IF (columnFlag) THEN
+            DO i=1,nspec
                 DO j=1,nout
                     IF (specname(i).eq.outSpecies(j)) outIndx(j)=i
                 END DO
-            END IF
-        END DO
+            END DO
+        END IF
 
         !read start file if choosing to use abundances from previous run 
         !
@@ -212,7 +193,7 @@ CONTAINS
                 READ(7,*)
                 READ(7,7030) (abund(i,l),i=1,nspec)
                 REWIND(7)
-                abund(nspec+1,l)=density(l)
+                abund(neq,l)=density(l)
             END DO
             7000 format(&
             &33x,1pe10.4,5x,/,&
@@ -230,19 +211,25 @@ CONTAINS
 
 !Writes physical variables and fractional abundances to output file, called every time step.
     SUBROUTINE output
-        !write out cloud properties
-        write(10,8020) timeInYears,density(dstep),temp(dstep),av(dstep),radfield,zeta,h2form,fc,fo,&
-                        &fmg,fhe,dstep
-        !and a blank line
-        write(10,8000)
-        !and then all the abundances for this step
-        write(10,8010) (specname(i),abund(i,dstep),i=1,nspec) 
-        write(10,8000)
+        LOGICAL fullOutput
+
+         INQUIRE( UNIT=10, OPENED=fullOutput ) 
+         IF (fullOutput) THEN
+            !write out cloud properties
+
+            write(10,8020) timeInYears,density(dstep),gasTemp(dstep),av(dstep),radfield,zeta,h2form,fc,fo,&
+                            &fmg,fhe,dstep
+            !and a blank line
+            write(10,8000)
+            !and then all the abundances for this step
+            write(10,8010) (specname(i),abund(i,dstep),i=1,nspec) 
+            write(10,8000)
+        END IF
         !If this is the last time step of phase I, write a start file for phase II
         IF (readAbunds .eq. 0) THEN
            IF (switch .eq. 0 .and. timeInYears .ge. finalTime& 
                &.or. switch .eq. 1 .and.density(dstep) .ge. finalDens) THEN
-               write(7,8020) timeInYears,density(dstep),temp(dstep),av(dstep),radfield,zeta,h2form,fc,fo,&
+               write(7,8020) timeInYears,density(dstep),gasTemp(dstep),av(dstep),radfield,zeta,h2form,fc,fo,&
                        &fmg,fhe,dstep
                write(7,8000)
                write(7,8010) (specname(i),abund(i,dstep),i=1,nspec)
@@ -267,9 +254,9 @@ CONTAINS
         !Every 'writestep' timesteps, write the chosen species out to separate file
         !choose species you're interested in by looking at parameters.f90
         IF (writeCounter==writeStep .and. columnFlag) THEN
-            writeCounter=0
-            write(11,8030) timeInYears,density(dstep),temp(dstep),abund(outIndx,dstep)
-            8030  format(1pe11.3,1x,1pe11.4,1x,0pf8.2,6(1x,1pe10.3))
+            writeCounter=1
+            write(11,8030) timeInYears,density(dstep),gasTemp(dstep),abund(outIndx,dstep)
+            8030  format(1pe11.3,1x,1pe11.4,1x,0pf8.2,10(1x,1pe10.3))
         ELSE
             writeCounter=writeCounter+1
         END IF
@@ -277,14 +264,13 @@ CONTAINS
 
     SUBROUTINE updateChemistry
     !Called every time/depth step and updates the abundances of all the species
-        abund(NEQ-1,dstep)=temp(dstep)
-        write(*,*) "start temperature",temp(dstep),abund(NEQ-1,dstep)
+        abund(NEQ-1,dstep)=gasTemp(dstep)
 
         !allow option for dens to have been changed elsewhere.
         IF (collapse .ne. 1) abund(NEQ,dstep)=density(dstep)
         !y is at final value of previous depth iteration so set to initial values of this depth with abund
         !reset other variables for good measure        
-        h2form = 1.0d-17*dsqrt(temp(dstep))
+        h2form = 1.0d-17*dsqrt(gasTemp(dstep))
     
         !Sum of abundaces of all mantle species. mantleindx stores the indices of mantle species.
         mantle(dstep)=sum(abund(grainList,dstep))
@@ -305,8 +291,7 @@ CONTAINS
         !1.d-30 stops numbers getting too small for fortran.
         WHERE(abund<1.0d-30) abund=1.0d-30
         density(dstep)=abund(NEQ,dstep)
-        temp(dstep)=abund(NEQ-1,dstep)
-        write(*,*) "temperature",temp(dstep),abund(NEQ-1,dstep)
+        gasTemp(dstep)=abund(NEQ-1,dstep)
     END SUBROUTINE updateChemistry
 
     SUBROUTINE integrate
@@ -314,15 +299,20 @@ CONTAINS
         DO WHILE(currentTime .lt. targetTime)         
             !reset parameters for DVODE
             ITASK=1 !try to integrate to targetTime
-            ISTATE=1 !pretend every step is the first
+            !ISTATE=1 !pretend every step is the first
             reltol=1e-4 !relative tolerance effectively sets decimal place accuracy
             abstol=1.0d-14*abund(:,dstep) !absolute tolerances depend on value of abundance
             WHERE(abstol<1d-30) abstol=1d-30 ! to a minimum degree
             !get reaction rates for this iteration
             CALL calculateReactionRates
+            h2form=1.0d-17*dsqrt(gasTemp(dstep))
+
+            tempDot=getTempDot(abund(NEQ-1,dstep),abund(NEQ,dstep),radfield,abund(:,dstep),h2dis,zeta,rate(nR_C_hv))
             !Call the integrator.
             OPTIONS = SET_OPTS(METHOD_FLAG=22, ABSERR_VECTOR=abstol, RELERR=reltol,USER_SUPPLIED_JACOBIAN=.FALSE.,MXSTEP=MXSTEP)
             CALL DVODE_F90(F,NEQ,abund(:,dstep),currentTime,targetTime,ITASK,ISTATE,OPTIONS)
+            write(*,*) ISTATE
+
             SELECT CASE(ISTATE)
                 CASE(-1)
                     !More steps required for this problem
@@ -330,19 +320,27 @@ CONTAINS
                 CASE(-2)
                     !Tolerances are too small for machine but succesful to current currentTime
                     abstol=abstol*10.0
+                    write(*,*) "ISTATE -2, abstol too small"
                 CASE(-3)
                     write(*,*) "DVODE found invalid inputs"
                     write(*,*) "abstol:"
                     write(*,*) abstol
+                    gasTemp(dstep)=abund(NEQ-1,dstep)
+                    writeCounter=writeStep
+                    call output
                     STOP
                 CASE(-4)
                     !Successful as far as currentTime but many errors.
                     !Make targetTime smaller and just go again
                     targetTime=currentTime+10.0*SECONDS_PER_YEAR
                 CASE(-5)
+                    write(*,*) "ISTATE -5"
                     targetTime=currentTime*1.01
+                    call calculateReactionRates
+                    tempDot=getTempDot(abund(NEQ-1,dstep),abund(NEQ,dstep),radfield,abund(:,dstep),h2dis,zeta,rate(nR_C_hv))
+                    ISTATE=1
             END SELECT
-        END DO                   
+        END DO        
     END SUBROUTINE integrate
 
     !This is where reacrates subroutine is hidden
@@ -355,7 +353,13 @@ CONTAINS
         REAL(WP), DIMENSION(NEQ) :: Y, YDOT
         INTENT(IN)  :: NEQ, T, Y
         INTENT(OUT) :: YDOT
-        DOUBLE PRECISION :: D,loss,prod
+        REAL(dp) :: D,loss,prod
+
+
+        write(*,*) "F start ",h2form,h2dis
+        write(*,*) y(neq-1),ydot(nh),y(nh2),y(nh),D
+        write(*,*) "***"
+
         !Set D to the gas density for use in the ODEs
         D=y(NEQ)
         ydot=0.0
@@ -364,7 +368,12 @@ CONTAINS
         INCLUDE 'odes.f90'
 
         !updated just in case temp changed
-        h2form=1.0d-17*dsqrt(Y(NEQ-1))
+        !h2form=1.0d-17*dsqrt(Y(NEQ-1))
+
+        ! write(*,*) "F odes",h2form,h2dis
+        ! write(*,*) y(neq-1),ydot(nh),y(nh2),y(nh),D
+        ! write(*,*) "***"
+
 
         !H2 formation should occur at both steps - however note that here there is no 
         !temperature dependence. y(nh) is hydrogen fractional abundance.
@@ -372,12 +381,18 @@ CONTAINS
         !                             h2 formation - h2-photodissociation
         ydot(nh2) = ydot(nh2) + h2form*y(nh)*D - h2dis*y(nh2)
         !                       h2 formation  - h2-photodissociation
-
         !get temperature change from heating module
-        ydot(NEQ-1)=getHeatingRate(Y(NEQ-1))+getCoolingRate()
-        ! get density change from physics module to send to DLSODE
-        IF (collapse .eq. 1) ydot(NEQ)=densdot(y(NEQ))
 
+
+        IF (heatingFlag) THEN
+            tempDot=getTempDot(Y(NEQ-1),Y(NEQ),radfield,Y,h2dis,zeta,rate(nR_C_hv))
+            ydot(NEQ-1)=tempDot
+        ELSE
+            ydot(NEQ-1)=0.0
+        END IF
+        ! write(*,*) "F see Tdot=",ydot(NEQ-1)
+        ! get density change from physics module to send to DLSODE
+        ydot(NEQ)=densdot(y(NEQ))
     END SUBROUTINE F
 
 
@@ -388,7 +403,7 @@ CONTAINS
         write(79,*) "density in integration array",abund(NEQ,dstep)
         write(79,*) "Av", av(dstep)
         write(79,*) "Mantle", mantle(dstep)
-        write(79,*) "Temp", temp(dstep)
+        write(79,*) "Temp", gasTemp(dstep)
         DO i=1,nreac
             if (rate(i) .ge. huge(i)) write(79,*) "Rate(",i,") is potentially infinite"
         END DO

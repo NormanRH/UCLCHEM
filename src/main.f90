@@ -19,6 +19,8 @@ IMPLICIT NONE
     !see example.inp
     INCLUDE 'readparameters.f90'
 
+    heatingFlag=.False.
+
 
     dstep=1
     currentTime=0.0
@@ -28,6 +30,7 @@ IMPLICIT NONE
     CALL initializePhysics
     CALL initializeChemistry
     
+    close(10)
     !loop until the end condition of the model is reached 
     DO WHILE ((switch .eq. 1 .and. density(1) < finalDens) .or. (switch .eq. 0 .and. timeInYears < finalTime))
         !store current time as starting point for each depth step
@@ -39,11 +42,13 @@ IMPLICIT NONE
         !loop over parcels, counting from centre out to edge of cloud
         DO dstep=1,points
             !update chemistry from currentTime to targetTime
+            if (timeInYears .gt. 1000) heatingFlag=.True.
+            write(*,*) heatingFlag
             CALL updateChemistry
             currentTime=targetTime
             !get time in years for output, currentTime is now equal to targetTime
             timeInYears= currentTime/SECONDS_PER_YEAR
-
+            !   write(*,*) timeInYears
             !Update physics so it's correct for new currentTime and start of next time step
             CALL updatePhysics
             !Sublimation checks if Sublimation should happen this time step and does it

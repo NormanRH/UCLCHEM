@@ -5,7 +5,7 @@
 !Initial physics variables and final  values. for temp, density and time
 initialTemp=10.0;maxTemp=300
 initialDens=1.00d2;finalDens=1.00d5
-currentTime=0.0;finalTime=1.0d7
+currentTime=0.0;finalTime=2.0d6
 
 !radfield in habing, cosmic ray ionisation rates as multiple of standard
 radfield=1.0;zeta=1.0
@@ -29,7 +29,7 @@ switch=0
 !collape=0/1 ONLY if not using cloud.f90
 !In all cases collapse=1 lets chem.f90 know it should call  densdot in the physics module to get time derivative of density and include it in ODES
 !Any other values tells it to use density value as set by physics module
-collapse=1
+collapse=0
 !for collapse=1 can introduce factor bc to slow freefall
 bc=1.0
 
@@ -72,7 +72,7 @@ fp=2.57d-09 ; ff = 3.6d-08 !fp depleted 1/100 of solar
 !Fortran will reject this array if species with shorter names are not padded with spaces at the end.
 !array commented so it does not override array in input file. 
 !If no array is passed in input, no column file is written
-!outSpecies=(/'CO ','H2S','OCS','CS '/)
+outSpecies=(/"H2O ","H2  ","H   ","CO  ","C+  ","O   ","CO+ ","CO2 ","#CO ","#H2O"/)
 
 !writeStep sets how often columns written out. Columns written every n steps for writeStep=n.
 writeStep=1

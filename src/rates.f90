@@ -17,26 +17,26 @@ SUBROUTINE calculateReactionRates
             ENDIF
         !cosmic ray induced photon
         CASE ('CRPHOT')
-            rate(j)=alpha(j)*gama(j)*1.0/(1.0-omega)*zeta*(temp(dstep)/300)**beta(j)
+            rate(j)=alpha(j)*gama(j)*1.0/(1.0-omega)*zeta*(gasTemp(dstep)/300)**beta(j)
         !freeze out only happens if fr>0 and depending on evap choice 
         CASE ('FREEZE')             
-            IF (fr .eq. 0.0 .or. temp(dstep) .gt. 30.0) then
+            IF (fr .eq. 0.0 .or. gasTemp(dstep) .gt. 30.0) then
                 rate(j)=0.0
             ELSE
                 IF (re1(j).eq."E-") THEN
-                    cion=1.0+16.71d-4/(GRAIN_RADIUS*temp(dstep))
+                    cion=1.0+16.71d-4/(GRAIN_RADIUS*gasTemp(dstep))
                     rate(j)=4.57d4*alpha(j)*GRAIN_AREA*fr*cion
                 ELSE
                     DO i=1,nspec-1
                         IF (specname(i).eq.re1(j)) THEN
                             IF (beta(j).eq.0.0 ) THEN
                                 !taken from Rawlings et al. 1992
-                                rate(j)=4.57d4*alpha(j)*dsqrt(temp(dstep)/mass(i))*GRAIN_AREA*fr
+                                rate(j)=4.57d4*alpha(j)*dsqrt(gasTemp(dstep)/mass(i))*GRAIN_AREA*fr
                             ELSE
                                 !Make rates sets beta=1 for ion freeze out. this catches that and
                                 !freezes differently
-                                cion=1.0+16.71d-4/(GRAIN_RADIUS*temp(dstep))
-                                rate(j)=4.57d4*alpha(j)*dsqrt(temp(dstep)/mass(i))*GRAIN_AREA*fr*cion
+                                cion=1.0+16.71d-4/(GRAIN_RADIUS*gasTemp(dstep))
+                                rate(j)=4.57d4*alpha(j)*dsqrt(gasTemp(dstep)/mass(i))*GRAIN_AREA*fr*cion
                             ENDIF
                         ENDIF
                     END DO
@@ -83,13 +83,13 @@ SUBROUTINE calculateReactionRates
             !Reactions on surface can be treated considering diffusion of reactants
             !See work of David Quenard 2017 Arxiv:1711.05184
             !abstracted to functions below for ease of reading
-            IF (re3(j).eq.'DIFF' .or. re3(j) .eq. 'CHEMDES') THEN
-                rate(j) = diffusionReactionRate()
-            ELSE
+            !IF (re3(j).eq.'DIFF' .or. re3(j) .eq. 'CHEMDES') THEN
+            !    rate(j) = diffusionReactionRate()
+            !ELSE
             !--------------------------------------------------------------------------------------------------------
             !Basic gas phase reactions 
-                rate(j) = alpha(j)*((temp(dstep)/300.)**beta(j))*dexp(-gama(j)/temp(dstep))
-            ENDIF
+                rate(j) = alpha(j)*((gasTemp(dstep)/300.)**beta(j))*dexp(-gama(j)/gasTemp(dstep))
+            !ENDIF
 
         END SELECT
     END DO
@@ -139,11 +139,11 @@ double precision FUNCTION diffusionReactionRate()
     END DO
 
     !Hasegawa 1992 diffusion rate. Rate that two species diffuse and meet on grain surface
-    diffuseRate = vdiff(index1)*dexp(-0.5*bindingEnergy(index1)/temp(dstep))
-    diffuseRate = (diffuseRate+ (vdiff(index2)*dexp(-0.5*bindingEnergy(index2)/temp(dstep))))/NUM_SITES_PER_GRAIN
+    diffuseRate = vdiff(index1)*dexp(-0.5*bindingEnergy(index1)/gasTemp(dstep))
+    diffuseRate = (diffuseRate+ (vdiff(index2)*dexp(-0.5*bindingEnergy(index2)/gasTemp(dstep))))/NUM_SITES_PER_GRAIN
 
     !Calculate classical activation energy barrier exponent
-    activationBarrier = gama(j)/temp(dstep)
+    activationBarrier = gama(j)/gasTemp(dstep)
 
     !Calculate quantum activation energy barrier exponent
     reducedMass = mass(grainList(index1)) * mass(grainList(index2)) / (mass(grainList(index1)) + mass(grainList(index2)))
@@ -159,8 +159,8 @@ double precision FUNCTION diffusionReactionRate()
     IF(DIFFUSE_REACT_COMPETITION) THEN
        activationBarrier = max(vdiff(index1),vdiff(index2)) * activationBarrier       
        !probability a reactant will just desorb
-       desorbProb = vdiff(index1)*dexp(-bindingEnergy(index1)/temp(dstep))
-       desorbProb = desorbProb + vdiff(index2)*dexp(-bindingEnergy(index2)/temp(dstep)) 
+       desorbProb = vdiff(index1)*dexp(-bindingEnergy(index1)/gasTemp(dstep))
+       desorbProb = desorbProb + vdiff(index2)*dexp(-bindingEnergy(index2)/gasTemp(dstep)) 
        !Probability reactants wills diffuse onwards when they meet
        diffuseProb = (diffuseRate) * NUM_SITES_PER_GRAIN
        !Therefore, total probability the reactants that meet will react
