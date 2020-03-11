@@ -14,4 +14,38 @@ MODULE CONSTANTS
    REAL(dp), PARAMETER :: EV = 1.60217646D-12 ! electron volt in erg
    REAL(dp), PARAMETER :: GRAV_G = 6.674d-8 !gravitational constant in cgs
    REAL(dp), PARAMETER :: SB_CONST=5.6704d-5 !Stefan Boltzmann constant in cgs
+CONTAINS
+    SUBROUTINE pair_insertion_sort(array)
+    REAL(dp), INTENT(inout) :: array(:)
+    INTEGER :: i,j,last
+    REAL(dp) :: t1,t2
+
+    last=size(array)
+    DO i=2,last-1,2
+       t1=min(array(i),array(i+1))
+       t2=max(array(i),array(i+1))
+       j=i-1
+       DO while((j.ge.1).and.(array(j).gt.t2))
+          array(j+2)=array(j)
+          j=j-1
+       ENDDO
+       array(j+2)=t2
+       DO while((j.ge.1).and.(array(j).gt.t1))
+          array(j+1)=array(j)
+          j=j-1
+       ENDDO
+       array(j+1)=t1
+    END DO
+
+    IF(mod(last,2).eq.0)then
+       t1=array(last)
+       DO j=last-1,1,-1
+          IF (array(j).le.t1) exit
+          array(j+1)=array(j)
+       END DO
+       array(j+1)=t1
+    ENDIF
+
+  END SUBROUTINE pair_insertion_sort
+
 END MODULE CONSTANTS

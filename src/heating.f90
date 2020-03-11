@@ -8,9 +8,12 @@ MODULE heating
 IMPLICIT NONE
 
 
+
 CONTAINS
 
-    SUBROUTINE initializeHeating()
+    SUBROUTINE initializeHeating(gasTemperature, gasDensity,abundances)
+        REAL(dp), INTENT(in) :: gasTemperature,gasDensity
+        REAL(dp), INTENT(in) :: abundances(:)
         INTEGER ::i,j
         CALL READ_COOLANTS()
         DO i=1,ncool
@@ -18,10 +21,63 @@ CONTAINS
                 if (coolantNames(i) .eq. specName(j)) coolantIndices(i)=j
             END DO
         END DO
+
+        CALL UPDATE_COOLANT_LINEWIDTHS(gasTemperature)
+        DO i=1,NCOOL
+            coolants(i)%DENSITY=abundances(coolantIndices(i))*gasDensity
+            CALL CALCULATE_LTE_POPULATIONS(coolants(i)%NLEVEL,coolants(i)%ENERGY,coolants(i)%WEIGHT, &
+                                          & coolants(i)%DENSITY,gasTemperature, &
+                                          & coolants(i)%POPULATION)
+        END DO
         ! coolantIndices(ncool+1)=nspec
         !Here I could find the reactions that give chemical heating and cooling
         !and store species indices in an array
     END SUBROUTINE initializeHeating
+
+
+
+    FUNCTION getEquilibriumTemp(gasTemperature,gasDensity,habingField,abundances,h2dis,zeta,cIonRate)
+        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,zeta,cIonRate
+        REAL(dp) :: getEquilibriumTemp
+        REAL(dp) :: abundances(:)
+        REAL(dp) :: adiabaticIdx,heating,cooling,fMax=5.0d-6,fRatio,maxTemp=1.0d6,minTemp=5.0d0
+        INTEGER :: maxTempIter=100,ti
+
+        maxTemp=1.0d6
+        minTemp=5.0d0
+        !initial guess is current temperature
+        getEquilibriumTemp=gasTemperature
+
+        !find heating and cooling rate for current temp
+        heating=getHeatingRate(gasTemperature,gasDensity,habingField,abundances,h2dis,zeta,cIonRate)
+        cooling=getCoolingRate(gasTemperature,gasDensity,abundances,h2dis)
+
+         !then get measure of their differences
+        fRatio=2.0D0*abs(heating-cooling)/abs(heating+cooling)
+        !write(*,*) ti,getEquilibriumTemp,heating,Cooling,fRatio
+
+        !whilst that difference is large, change temp to reduce it
+        IF (fRatio .gt. fMax) THEN
+            DO ti=1,maxTempIter
+                !if heating>cooling gas is too cold so minTemp is at least current temp
+                IF (heating .gt. cooling) minTemp=getEquilibriumTemp
+                !equally cooling implies temp can't be larger than current.
+                IF (cooling .gt. heating) maxTemp=getEquilibriumTemp
+                !take average of min and max to get new trial
+                getEquilibriumTemp=(minTemp+maxTemp)*0.5d0
+
+                !recalculate heatnig,cooling and ratio
+                heating=getHeatingRate(getEquilibriumTemp,gasDensity,habingField,abundances,h2dis,zeta,cIonRate)
+                cooling=getCoolingRate(getEquilibriumTemp,gasDensity,abundances,h2dis)
+                fRatio=2.0D0*abs(heating-cooling)/abs(heating+cooling)
+                IF (fRatio .lt. fMax) exit
+                IF (abs(minTemp-maxTemp).lt.0.5) exit
+                !write(*,*) ti,getEquilibriumTemp,heating,Cooling,minTemp,maxTemp
+            END DO
+        ELSE
+            getEquilibriumTemp=gasTemperature
+        END IF
+    END FUNCTION getEquilibriumTemp
 
     REAL(dp) FUNCTION getTempDot(gasTemperature,gasDensity,habingField,abundances,h2dis,zeta,cIonRate)
         REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,zeta,cIonRate
@@ -86,34 +142,47 @@ CONTAINS
     REAL(dp) FUNCTION getCoolingRate(gasTemperature,gasDensity,abundances,h2dis)
         REAL(dp), INTENT(IN) :: gasTemperature,gasDensity,h2dis
         REAL(dp), INTENT(IN) :: abundances(:)
-        real(dp) :: coolingMode
+        real(dp) :: coolingMode, coolings(5)
+        INTEGER :: ti
 
-        coolingMode=atomicCooling(gasTemperature,gasDensity,abundances(nh),abundances(nhe),&
-                                &abundances(nelec),abundances(nhx),abundances(nhex))
-        !write(*,*) coolingMode, "atomic"
-        getCoolingRate=coolingMode
-        getCoolingRate=0.0
-        coolingMode=collionallyInducedEmission(gasTemperature,gasDensity,abundances(nh2))
-        !write(*,*) coolingMode, "CIE"
-        getCoolingRate=getCoolingRate+coolingMode
+
+        ! coolingMode=atomicCooling(gasTemperature,gasDensity,abundances(nh),abundances(nhe),&
+        !                         &abundances(nelec),abundances(nhx),abundances(nhex))
+        ! write(*,*) coolingMode, "atomic"
+        ! getCoolingRate=coolingMode
+
+        ! coolingMode=collionallyInducedEmission(gasTemperature,gasDensity,abundances(nh2))
+        ! write(*,*) coolingMode, "CIE"
+        ! getCoolingRate=getCoolingRate+coolingMode
         
-        coolingMode=comptonCooling(gasTemperature,gasDensity,abundances(nelec))
-        !write(*,*) coolingMode, "Compton"
-        getCoolingRate=getCoolingRate+coolingMode
+        ! coolingMode=comptonCooling(gasTemperature,gasDensity,abundances(nelec))
+        ! write(*,*) coolingMode, "Compton"
+        ! getCoolingRate=getCoolingRate+coolingMode
 
-        coolingMode=continuumEmission(gasTemperature,gasDensity)
-        !write(*,*) coolingMode, "Continuum"
-        getCoolingRate=getCoolingRate+coolingMode
+        ! coolingMode=continuumEmission(gasTemperature,gasDensity)
+        ! write(*,*) coolingMode, "Continuum"
+        ! getCoolingRate=getCoolingRate+coolingMode
 
-        coolingMode=H2VibrationalCooling(gasTemperature,gasDensity,abundances(nh2),h2dis)
-        !write(*,*) coolingMode, "H2 Vibrational"
-        getCoolingRate=getCoolingRate+coolingMode
-
-        coolingMode=lineCooling(gasTemperature,gasDensity,abundances)
-        !write(*,*) coolingMode, "Line cooling"
+        ! coolingMode=H2VibrationalCooling(gasTemperature,gasDensity,abundances(nh2),h2dis)
+        ! write(*,*) coolingMode, "H2 Vibrational"
+        ! getCoolingRate=getCoolingRate+coolingMode
+        getCoolingRate=0.0D0
+        DO ti=1,5
+            coolings(ti)=lineCooling(gasTemperature,gasDensity,abundances)
+        END DO
+        call pair_insertion_sort(coolings)
+        coolingMode=coolings(3)
+        ! write(*,*) "Line cooling"
+        ! write(*,*) coolings, coolingMode
         getCoolingRate=getCoolingRate+coolingMode
     END FUNCTION getCoolingRate
 
+
+    !Put fits from Neufeld here.
+    REAL(dp) FUNCTION simpleLineCooling(gasTemperature,gasDensity,abundances)
+        REAL(dp), INTENT(IN) :: gasTemperature,gasDensity,abundances(:)
+        simpleLineCooling=0.0
+    END FUNCTION simpleLineCooling 
 
 
     REAL(dp) FUNCTION lineCooling(gasTemperature,gasDensity,abundances)
@@ -155,14 +224,21 @@ CONTAINS
                                                           & *(abundances(nH)*gasDensity) &
                                                           & *EXP(-118400.0D0/gasTemperature)
             END IF
-            If (abundances(coolantIndices(N)) .lt. 1.0d-20) coolants(N)%EMISSIVITY=0.0
         END DO
 
         !Calculate the cooling rates
         lineCooling=0.0
         DO N=1,NCOOL
             moleculeCooling=SUM(coolants(N)%EMISSIVITY,MASK=.NOT.ISNAN(coolants(N)%EMISSIVITY))
-            IF (moleculeCooling .gt. -1.0d-30) lineCooling= lineCooling+moleculeCooling
+
+            ! !we get these wild changes in cooling rate so let's force it not to change too much in a timestep
+            ! IF ( (abs(moleculeCooling-coolants(N)%previousCooling)/coolants(N)%previousCooling) .gt. 2.0d0) THEN
+            !     !unless it's step 1, use old cooling for this time step
+            !     IF (coolants(N)%previousCooling .ne. 0.0d0) moleculeCooling=coolants(N)%previousCooling
+            ! ELSE
+            !     coolants(N)%previousCooling=moleculeCooling
+            ! END IF
+            IF (moleculeCooling .gt. -1.0d-30 .and. abundances(coolantIndices(N)) .gt. 1.0d-20) lineCooling= lineCooling+moleculeCooling
         END DO
         !!write(*,*) lineCooling
     END FUNCTION lineCooling
@@ -198,15 +274,17 @@ CONTAINS
             &+(1.27d-21*rootT*EXP(-157809.1*invT)*elecDens*hDens*collTFactor)&
             &+(9.38d-22*rootT*EXP(-285335.4*invT)*elecDens*heDens*collTFactor)&
             &+(4.95d-22*rootT*EXP(-631515.0*invT)*elecDens*hexDens*collTFactor)&
-
+            !dielectric
+            &+(1.24d-13*(gasT**-1.5)*EXP(-470000.0*invT)*(1.0+0.3*EXP(-94000.0*invT))*elecDens*hexDens)
+        IF (gasT .gt. 1.0d5) THEN
         !recombination
+            atomicCooling=atomicCooling&
             &+(8.7d-27*rootT*((1.0d-3*gasT)**-0.2)*elecDens*hxDens/(1.0+((0.1*t5)**0.7)))&
             &+(1.55d-26*(gasT**0.3647)*elecDens*hexDens)&
             !&+(3.48d-26*rootT*((0.001*gasT)**-0.2)*nelec*nhexI/(1+(0.1*t5)**0.7))&
-            &+(1.24d-13*(gasT**-1.5)*EXP(-470000.0*invT)*(1.0+0.3*EXP(-94000.0*invT))*elecDens*hexDens)&
-
-        !free-free emission from all interactions
+            !Free-free emission
             &+(1.42d-27*rootT*nelec*(nhex+nhx)*gauntFactor)
+        END IF
 
     END FUNCTION atomicCooling
 

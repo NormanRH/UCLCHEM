@@ -42,13 +42,13 @@ IMPLICIT NONE
         !loop over parcels, counting from centre out to edge of cloud
         DO dstep=1,points
             !update chemistry from currentTime to targetTime
-            if (timeInYears .gt. 1000) heatingFlag=.True.
-            write(*,*) heatingFlag
+            if (timeInYears .gt. 1) heatingFlag=.True.
+            !write(*,*) heatingFlag
             CALL updateChemistry
             currentTime=targetTime
             !get time in years for output, currentTime is now equal to targetTime
             timeInYears= currentTime/SECONDS_PER_YEAR
-            !   write(*,*) timeInYears
+            write(*,*) timeInYears,gastemp(dstep)
             !Update physics so it's correct for new currentTime and start of next time step
             CALL updatePhysics
             !Sublimation checks if Sublimation should happen this time step and does it

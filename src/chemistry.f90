@@ -41,7 +41,7 @@ IMPLICIT NONE
     REAL(dp),allocatable :: abund(:,:),mantle(:)
     
     !Variables controlling chemistry
-    REAL(dp) :: radfield,zeta,fr,omega,grainArea,cion,h2form,h2dis,tempDot
+    REAL(dp) :: radfield,zeta,fr,omega,grainArea,cion,h2form,h2dis,tempDot,oldTemp=0.0
     REAL(dp) :: ebmaxh2,epsilon,ebmaxcrf,ebmaxcr,phi,ebmaxuvcr,uvy,uvcreff
     REAL(dp), allocatable ::vdiff(:)
 
@@ -158,7 +158,7 @@ CONTAINS
         END IF
         !OPTIONS = SET_OPTS(METHOD_FLAG=22, ABSERR_VECTOR=abstol, RELERR=reltol,USER_SUPPLIED_JACOBIAN=.FALSE.)
         
-        CALL initializeHeating
+        CALL initializeHeating(initialTemp,initialDens,abund(:,1))
     END SUBROUTINE initializeChemistry
 
 !Reads input reaction and species files as well as the final step of previous run if this is phase 2
@@ -253,7 +253,7 @@ CONTAINS
 
         !Every 'writestep' timesteps, write the chosen species out to separate file
         !choose species you're interested in by looking at parameters.f90
-        IF (writeCounter==writeStep .and. columnFlag) THEN
+        IF ((writeCounter==writeStep .or. timeInYears .lt. 1000.0) .and. columnFlag) THEN
             writeCounter=1
             write(11,8030) timeInYears,density(dstep),gasTemp(dstep),abund(outIndx,dstep)
             8030  format(1pe11.3,1x,1pe11.4,1x,0pf8.2,10(1x,1pe10.3))
@@ -264,6 +264,7 @@ CONTAINS
 
     SUBROUTINE updateChemistry
     !Called every time/depth step and updates the abundances of all the species
+        !gasTemp(dstep)=getEquilibriumTemp(gasTemp(dstep),abund(NEQ,dstep),radfield,abund(:,dstep),h2dis,zeta,rate(nR_C_hv))
         abund(NEQ-1,dstep)=gasTemp(dstep)
 
         !allow option for dens to have been changed elsewhere.
@@ -299,19 +300,20 @@ CONTAINS
         DO WHILE(currentTime .lt. targetTime)         
             !reset parameters for DVODE
             ITASK=1 !try to integrate to targetTime
-            !ISTATE=1 !pretend every step is the first
+            ISTATE=1 !pretend every step is the first
             reltol=1e-4 !relative tolerance effectively sets decimal place accuracy
-            abstol=1.0d-14*abund(:,dstep) !absolute tolerances depend on value of abundance
+            abstol=1.0d-14!*abund(:,dstep) !absolute tolerances depend on value of abundance
             WHERE(abstol<1d-30) abstol=1d-30 ! to a minimum degree
             !get reaction rates for this iteration
             CALL calculateReactionRates
             h2form=1.0d-17*dsqrt(gasTemp(dstep))
 
+
             tempDot=getTempDot(abund(NEQ-1,dstep),abund(NEQ,dstep),radfield,abund(:,dstep),h2dis,zeta,rate(nR_C_hv))
             !Call the integrator.
             OPTIONS = SET_OPTS(METHOD_FLAG=22, ABSERR_VECTOR=abstol, RELERR=reltol,USER_SUPPLIED_JACOBIAN=.FALSE.,MXSTEP=MXSTEP)
             CALL DVODE_F90(F,NEQ,abund(:,dstep),currentTime,targetTime,ITASK,ISTATE,OPTIONS)
-            write(*,*) ISTATE
+            !write(*,*) ISTATE
 
             SELECT CASE(ISTATE)
                 CASE(-1)
@@ -325,19 +327,17 @@ CONTAINS
                     write(*,*) "DVODE found invalid inputs"
                     write(*,*) "abstol:"
                     write(*,*) abstol
-                    gasTemp(dstep)=abund(NEQ-1,dstep)
                     writeCounter=writeStep
                     call output
                     STOP
                 CASE(-4)
                     !Successful as far as currentTime but many errors.
                     !Make targetTime smaller and just go again
-                    targetTime=currentTime+10.0*SECONDS_PER_YEAR
+                    targetTime=currentTime*1.001
+                    ISTATE=1
                 CASE(-5)
                     write(*,*) "ISTATE -5"
-                    targetTime=currentTime*1.01
-                    call calculateReactionRates
-                    tempDot=getTempDot(abund(NEQ-1,dstep),abund(NEQ,dstep),radfield,abund(:,dstep),h2dis,zeta,rate(nR_C_hv))
+                    targetTime=currentTime*1.001
                     ISTATE=1
             END SELECT
         END DO        
@@ -356,9 +356,9 @@ CONTAINS
         REAL(dp) :: D,loss,prod
 
 
-        write(*,*) "F start ",h2form,h2dis
-        write(*,*) y(neq-1),ydot(nh),y(nh2),y(nh),D
-        write(*,*) "***"
+        ! write(*,*) "F start ",h2form,h2dis
+        ! write(*,*) y(neq-1),ydot(nh),y(nh2),y(nh),D
+        ! write(*,*) "***"
 
         !Set D to the gas density for use in the ODEs
         D=y(NEQ)
@@ -385,8 +385,13 @@ CONTAINS
 
 
         IF (heatingFlag) THEN
-            tempDot=getTempDot(Y(NEQ-1),Y(NEQ),radfield,Y,h2dis,zeta,rate(nR_C_hv))
+            IF (ABS(y(NEQ-1)-oldTemp).gt.1) THEN
+                write(*,*) "recalc!"
+                tempDot=getTempDot(Y(NEQ-1),Y(NEQ),radfield,Y,h2dis,zeta,rate(nR_C_hv))
+                oldTemp=y(NEQ-1)
+            END IF
             ydot(NEQ-1)=tempDot
+
         ELSE
             ydot(NEQ-1)=0.0
         END IF

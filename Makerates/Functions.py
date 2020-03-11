@@ -43,7 +43,9 @@ class Reaction:
 		return aa
 
 
-
+elementList=['H','D','HE','C','N','O','F','P','S','CL','LI','NA','MG','SI','PAH','15N']
+elementMass=[1,2,4,12,14,16,19,31,32,35,3,23,24,28,420,15]
+symbols=['#','+','-','(',')']
 
 ##########################################################################################
 #2. Functions to read in the species and reaction file and check for sanity
@@ -185,10 +187,7 @@ def make_capitals(fileName):
 	output.close()
 
 def find_constituents(speciesList):
-	elementList=['H','D','HE','C','N','O','F','P','S','CL','LI','NA','MG','SI','PAH','15N']
-	elementMass=[1,2,4,12,14,16,19,31,32,35,3,23,24,28,420,15]
-	symbols=['#','+','-','(',')']
-    
+   
 	for species in speciesList:
 		speciesName=species.name
 		i=0
@@ -494,9 +493,9 @@ def is_H2_formation(reactants, products):
     return False
 
 def write_network_file(fileName,speciesList,reactionList):
-	openFile=open(fileName,"wb")
+	openFile=open(fileName,"w")
 	openFile.write("MODULE network\n    IMPLICIT NONE\n")
-	openFile.write("    integer, parameter :: nSpec={0}, nReac={1}\n".format(len(speciesList),len(reactionList)))
+	openFile.write("    INTEGER, PARAMETER :: nSpec={0}, nReac={1}\n".format(len(speciesList),len(reactionList)))
 
 	#write arrays of all species stuff
 	names=[]
@@ -506,6 +505,47 @@ def write_network_file(fileName,speciesList,reactionList):
 		names.append(species.name)
 		masses.append(float(species.mass))
 		atoms.append(species.n_atoms)
+
+	#store indices of important species for use in code
+	speciesIndices=""
+	for element in ["E-","C+","H+","H2","SI+","S+","CL+","CO","HE+","HCO+","H3O+","H3+"]+elementList:
+		try:
+			species_index=names.index(element)+1
+			name=element.lower().replace("+","x").replace("e-","elec")
+			speciesIndices+="n{0}={1},".format(name,species_index)
+		except:
+			print(element," not in network")
+	if len(speciesIndices)>50:
+		speciesIndices=speciesIndices[:60]+"&\n&"+speciesIndices[60:]
+	speciesIndices=speciesIndices[:-1]+"\n"
+	openFile.write("    INTEGER, PARAMETER ::"+speciesIndices)
+
+
+	#do the same for important reactions
+	reactionIndices=""
+	for i,reaction in enumerate(reactionList):
+		if ("H2+" in reaction.reactants) and ("e-" in reaction.reactants):
+			reactionIndices+="nR_H2x_e={0},".format(i+1)
+		if ("H2+" in reaction.reactants) and ("H" in reaction.reactants):
+			reactionIndices+="nR_H2x_H={0},".format(i+1)
+		if ("H3+" in reaction.reactants) and ("e-" in reaction.reactants):
+			reactionIndices+="nR_H3x_e={0},".format(i+1)
+		if ("H3O+" in reaction.reactants) and ("e-" in reaction.reactants):
+			reactionIndices+="nR_H3Ox_e={0},".format(i+1)
+		if ("HCO+" in reaction.reactants) and ("e-" in reaction.reactants):
+			reactionIndices+="nR_HCOx_e={0},".format(i+1)
+		if ("HE+" in reaction.reactants) and ("e-" in reaction.reactants):
+			reactionIndices+="nR_HEx_e={0},".format(i+1)
+		if ("HE+" in reaction.reactants) and ("e-" in reaction.reactants):
+			reactionIndices+="nR_HEx_e={0},".format(i+1)
+		if ("C" in reaction.reactants) and ("PHOTON" in reaction.reactants):
+			reactionIndices+="nR_C_hv={0},".format(i+1)
+
+	if len(reactionIndices)>50:
+		reactionIndices=reactionIndices[:60]+"&\n&"+reactionIndices[60:]
+	reactionIndices=reactionIndices[:-1]+"\n"
+	openFile.write("    INTEGER, PARAMETER ::"+reactionIndices)
+
 	openFile.write(array_to_string("    specname",names,type="string"))
 	openFile.write(array_to_string("    mass",masses,type="float"))
 	openFile.write(array_to_string("    atomCounts",atoms,type="int"))

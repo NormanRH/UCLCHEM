@@ -107,7 +107,7 @@ def write_cols(filename,times,dens,abundances):
 #optionally send an output filename to save the plot
 #return ax,figure for further manipulation
 def plot_species(species,times,abundances,plotFile=None):
-    fig=plt.figure()
+    fig=plt.figure(figsize=(16,9))
     ax=fig.add_subplot(111)
     colours=make_colours(len(species))
 

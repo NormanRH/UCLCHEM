@@ -14,7 +14,7 @@ MODULE COOLANT_MODULE
       INTEGER :: NLEVEL ! Number of levels in the system
       INTEGER :: NTEMP  ! Number of temperatures for which collisional rates are available
 
-      REAL(dp) :: MOLECULAR_MASS ! Molecular mass of the coolant species
+      REAL(dp) :: MOLECULAR_MASS, previousCooling ! Molecular mass of the coolant species
 
       REAL(dp), ALLOCATABLE :: ENERGY(:),WEIGHT(:) ! Energy (K) and statistical weight of each level
       REAL(dp), ALLOCATABLE :: A_COEFF(:,:),B_COEFF(:,:) ! Einstein A and B coefficients for each transition between levels
@@ -44,6 +44,8 @@ MODULE COOLANT_MODULE
    CHARACTER(*), PARAMETER :: coolantFiles(NCOOL)=(/"12c+_nometa.dat","16o.dat        ","12c.dat        ",&
             &"12co.dat       ","p-h2.dat       ","o-h2.dat       ","28si+.dat      ","p-h2o.dat      ","o-h2o.dat      "/)
    CHARACTER(*), PARAMETER :: coolantNames(NCOOL)=(/"C+ ","O  ","C  ","CO ","H2 ","H2 ","SI+","H2O","H2O"/)
+   ! CHARACTER(*), PARAMETER :: coolantFiles(NCOOL)=(/"12co.dat       ","p-h2.dat       ","o-h2.dat       ","p-h2o.dat      ","o-h2o.dat      "/)
+   ! CHARACTER(*), PARAMETER :: coolantNames(NCOOL)=(/"CO ","H2 ","H2 ","H2O","H2O"/)
    INTEGER :: coolantIndices(NCOOL)
 
 CONTAINS
@@ -198,7 +200,7 @@ CONTAINS
          END DO ! End of loop over collision partners
 
          coolants(N)%NTEMP=MAX_NTEMP
-
+         coolants(N)%previousCooling=0.0d0
          CLOSE(1)
 
       END DO ! End of loop over coolants
@@ -315,7 +317,7 @@ CONTAINS
                
                !geometric distance between two particles
                !UCLPDR does this with particles along ray and get euler distance between them
-               STEP_SIZE = 0.05*PC
+               STEP_SIZE = 0.005*PC
                ! STEP_SIZE=5.0d16
 !                    Line opacity of the coolant transition (i,j) using the Trapezium integration method (default)
 
@@ -880,7 +882,7 @@ END SUBROUTINE CALCULATE_COLLISIONAL_RATES
 LOGICAL FUNCTION CHECK_CONVERGENCE()
    INTEGER :: I,N
    REAL(dp) :: RELATIVE_CHANGE
-   REAL(dp), PARAMETER :: POPULATION_LIMIT=1.0D-10,POPULATION_CONVERGENCE_CRITERION=0.001
+   REAL(dp), PARAMETER :: POPULATION_LIMIT=1.0D-12,POPULATION_CONVERGENCE_CRITERION=0.0001!pretty sure this is 0.1 in uclpdr
    LOGICAL :: convergence(NCOOL)
 
       DO N=1,NCOOL ! Loop over coolants
