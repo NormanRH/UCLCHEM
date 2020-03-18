@@ -6,6 +6,7 @@ MODULE CONSTANTS
    REAL(dp), PARAMETER :: HP = 6.62606896D-27 !Planck constant in cgs
    REAL(dp), PARAMETER :: REDUCED_PLANCK=1.054571628d-27
    REAL(dp), PARAMETER :: MH = 1.67262164D-24 !H nucleus mass in cgs
+   REAL(dp), PARAMETER :: AMU=1.66053892d-24 !atomic mass unit in cgs
    REAL(dp), PARAMETER :: PI = 3.141592654
    REAL(dp), PARAMETER :: K_BOLTZ_SI=1.38d-23 !Boltzmann constant SI
    REAL(dp), PARAMETER :: PC=3.086d18 !parsec in cgs

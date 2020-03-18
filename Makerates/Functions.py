@@ -37,10 +37,21 @@ class Reaction:
 		self.gamma=float(inputRow[9])
 		self.templow=inputRow[10]
 		self.temphigh=inputRow[11]
+		if (len(inputRow)>12):
+			try:
+				self.energy=float(inputRow[12])
+			except:
+				pass
 
 	def NANCheck(self,a):
 		aa  = a if a else 'NAN'
 		return aa
+
+	def same_reaction(self,other):
+		if set(self.reactants)==set(other.reactants):
+			if set(self.products)==set(other.products):
+				return True
+		return False
 
 
 elementList=['H','D','HE','C','N','O','F','P','S','CL','LI','NA','MG','SI','PAH','15N']
@@ -64,6 +75,7 @@ def read_species_file(fileName):
 
 # Read the entries in the specified reaction file and keep the reactions that involve the species in our species list
 def read_reaction_file(fileName, speciesList, ftype):
+	print(fileName)
 	reactions=[]
 	dropped_reactions=[]
 	keepList=[]
@@ -77,7 +89,7 @@ def read_reaction_file(fileName, speciesList, ftype):
 		for row in reader:
 			if all(x in keepList for x in [row[2],row[3],row[4],row[5],row[6],row[7]]): #if all the reaction elements belong to the keeplist
 				#umist file doesn't have third reactant so add space and has a note for how reactions there are so remove that
-				reactions.append(Reaction(row[2:4]+['']+row[4:8]+row[9:]))
+				reactions.append(Reaction(row[2:4]+['']+row[4:8]+row[9:14]))
 	if ftype == 'UCL':	# if it is a ucl made (grain?) reaction file
 		f = open(fileName, 'r')
 		reader = csv.reader(f, delimiter=',', quotechar='|')
@@ -492,7 +504,7 @@ def is_H2_formation(reactants, products):
         if reactants[0] == 'H' and reactants[1] == 'H' and reactants[2] == '#' and products[0] == 'H2' and products[1] == '#': return True
     return False
 
-def write_network_file(fileName,speciesList,reactionList):
+def write_network_file(fileName,speciesList,reactionList,exotherm_reacs):
 	openFile=open(fileName,"w")
 	openFile.write("MODULE network\n    IMPLICIT NONE\n")
 	openFile.write("    INTEGER, PARAMETER :: nSpec={0}, nReac={1}\n".format(len(speciesList),len(reactionList)))
@@ -576,6 +588,7 @@ def write_network_file(fileName,speciesList,reactionList):
 		alpha.append(reaction.alpha)
 		beta.append(reaction.beta)
 		gama.append(reaction.gamma)
+
 	openFile.write(array_to_string("\tre1",reactant1,type="string"))
 	openFile.write(array_to_string("\tre2",reactant2,type="string"))
 	openFile.write(array_to_string("\tre3",reactant3,type="string"))
@@ -586,6 +599,28 @@ def write_network_file(fileName,speciesList,reactionList):
 	openFile.write(array_to_string("\talpha",alpha,type="float",parameter=False))
 	openFile.write(array_to_string("\tbeta",beta,type="float",parameter=False))
 	openFile.write(array_to_string("\tgama",gama,type="float",parameter=False))
+
+
+	exo_reactants1=[]
+	exo_reactants2=[]
+	exo_reac_indxs=[]
+	exothermicities=[]
+	for reaction in exotherm_reacs:
+		for i,reaction2 in enumerate(reactionList):
+			if reaction.same_reaction(reaction2):
+				exo_reac_indxs.append(i+1)
+				break
+		exo_reactants1.append(names.index(reaction.reactants[0])+1)
+		exo_reactants2.append(names.index(reaction.reactants[1])+1)
+		exothermicities.append(reaction.energy)
+
+
+	openFile.write(array_to_string("exoReactants1",exo_reactants1,type="int"))
+	openFile.write(array_to_string("exoReactants2",exo_reactants2,type="int"))
+	openFile.write(array_to_string("exoReacIdxs",exo_reac_indxs,type="int"))
+	openFile.write(array_to_string("exothermicities",exothermicities,type="float"))
+
+
 	openFile.write("END MODULE network")
 	openFile.close()
 

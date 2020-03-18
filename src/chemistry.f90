@@ -50,13 +50,13 @@ IMPLICIT NONE
     !(assuming turbulent broadening with beta=3e5cms-1)
     !radw = radiative line width of typ. transition (in s-1)
     !fosc = oscillator strength of a typical transition
-    REAL(dp)  :: dopw=3.0e10,radw=8.0e07,xl=1000.0,fosc  = 1.0d-2,taud
+    REAL(dp)  :: dopw=3.0e10,radw=8.0e07,xl=1000.0,fosc  = 1.0d-2,taud,UV_FAC=3.02
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !variables for diffusion reactions on the grains, CGS unless otherwise stated.
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     LOGICAL, parameter :: DIFFUSE_REACT_COMPETITION=.True., GRAINS_HAVE_ICE=.True.
-    REAL(dp), parameter :: GAS_DUST_MASS_RATIO=100.0,AMU=1.66053892d-24
+    REAL(dp), parameter :: GAS_DUST_MASS_RATIO=100.0
     REAL(dp), parameter :: GRAIN_AREA=2.4d-22,GRAIN_RADIUS=1.d-5 
     REAL(dp), parameter :: CHEMICAL_BARRIER_THICKNESS = 1.40d-8  !gre Parameter used to compute the probability for a surface reaction with 
     !! activation energy to occur through quantum tunneling (Hasegawa et al. Eq 6 (1992).)
@@ -158,7 +158,7 @@ CONTAINS
         END IF
         !OPTIONS = SET_OPTS(METHOD_FLAG=22, ABSERR_VECTOR=abstol, RELERR=reltol,USER_SUPPLIED_JACOBIAN=.FALSE.)
         
-        CALL initializeHeating(initialTemp,initialDens,abund(:,1))
+        CALL initializeHeating(initialTemp,initialDens,abund(:,1),cloudSize)
     END SUBROUTINE initializeChemistry
 
 !Reads input reaction and species files as well as the final step of previous run if this is phase 2
@@ -255,8 +255,8 @@ CONTAINS
         !choose species you're interested in by looking at parameters.f90
         IF ((writeCounter==writeStep .or. timeInYears .lt. 1000.0) .and. columnFlag) THEN
             writeCounter=1
-            write(11,8030) timeInYears,density(dstep),gasTemp(dstep),abund(outIndx,dstep)
-            8030  format(1pe11.3,1x,1pe11.4,1x,0pf8.2,10(1x,1pe10.3))
+            write(11,8030) timeInYears,density(dstep),gasTemp(dstep),av(dstep),abund(outIndx,dstep)
+            8030  format(1pe11.3,1x,1pe11.4,1x,0pf8.2,1x,0pf8.5,10(1x,1pe10.3))
         ELSE
             writeCounter=writeCounter+1
         END IF
@@ -264,7 +264,8 @@ CONTAINS
 
     SUBROUTINE updateChemistry
     !Called every time/depth step and updates the abundances of all the species
-        !gasTemp(dstep)=getEquilibriumTemp(gasTemp(dstep),abund(NEQ,dstep),radfield,abund(:,dstep),h2dis,zeta,rate(nR_C_hv))
+        !gasTemp(dstep)=getEquilibriumTemp(gasTemp(dstep),abund(NEQ,dstep),radfield,abund(:,dstep),h2dis,zeta,rate(nR_C_hv)&
+        !    &,1.0/GAS_DUST_DENSITY_RATIO,abund(exoReactants1,dstep),abund(exoReactants2,dstep),RATE(exoReacIdxs),exothermicities)
         abund(NEQ-1,dstep)=gasTemp(dstep)
 
         !allow option for dens to have been changed elsewhere.
@@ -281,8 +282,8 @@ CONTAINS
             h2col=(sum(abund(nh2,:dstep-1)*density(:dstep-1))+0.5*abund(nh2,dstep)*density(dstep))*(cloudSize/real(points))
             cocol=(sum(abund(nco,:dstep-1)*density(:dstep-1))+0.5*abund(nco,dstep)*density(dstep))*(cloudSize/real(points))
         ELSE
-            h2col=0.5*abund(nh2,dstep)*density(dstep)*(cloudSize/real(points))
-            cocol=0.5*abund(nco,dstep)*density(dstep)*(cloudSize/real(points))
+            h2col=abund(nh2,dstep)*density(dstep)*(cloudSize/real(points))
+            cocol=abund(nco,dstep)*density(dstep)*(cloudSize/real(points))
         ENDIF
 
         !call the actual ODE integrator
@@ -308,8 +309,8 @@ CONTAINS
             CALL calculateReactionRates
             h2form=1.0d-17*dsqrt(gasTemp(dstep))
 
-
-            tempDot=getTempDot(abund(NEQ-1,dstep),abund(NEQ,dstep),radfield,abund(:,dstep),h2dis,zeta,rate(nR_C_hv))
+            tempDot=getTempDot(abund(NEQ-1,dstep),abund(NEQ,dstep),radfield*EXP(-UV_FAC*av(dstep)),abund(:,dstep),h2dis,zeta,rate(nR_C_hv),&
+                &1.0/GAS_DUST_DENSITY_RATIO,abund(exoReactants1,dstep),abund(exoReactants2,dstep),RATE(exoReacIdxs),exothermicities)
             !Call the integrator.
             OPTIONS = SET_OPTS(METHOD_FLAG=22, ABSERR_VECTOR=abstol, RELERR=reltol,USER_SUPPLIED_JACOBIAN=.FALSE.,MXSTEP=MXSTEP)
             CALL DVODE_F90(F,NEQ,abund(:,dstep),currentTime,targetTime,ITASK,ISTATE,OPTIONS)
@@ -386,8 +387,9 @@ CONTAINS
 
         IF (heatingFlag) THEN
             IF (ABS(y(NEQ-1)-oldTemp).gt.1) THEN
-                write(*,*) "recalc!"
-                tempDot=getTempDot(Y(NEQ-1),Y(NEQ),radfield,Y,h2dis,zeta,rate(nR_C_hv))
+                ! write(*,*) "recalc!"
+                tempDot=getTempDot(Y(NEQ-1),Y(NEQ),radfield*EXP(-UV_FAC*av(dstep)),Y,h2dis,zeta,rate(nR_C_hv),1.0/GAS_DUST_DENSITY_RATIO&
+                    &,y(exoReactants1),y(exoReactants2),RATE(exoReacIdxs),exothermicities)
                 oldTemp=y(NEQ-1)
             END IF
             ydot(NEQ-1)=tempDot

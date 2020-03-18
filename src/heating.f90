@@ -11,8 +11,8 @@ IMPLICIT NONE
 
 CONTAINS
 
-    SUBROUTINE initializeHeating(gasTemperature, gasDensity,abundances)
-        REAL(dp), INTENT(in) :: gasTemperature,gasDensity
+    SUBROUTINE initializeHeating(gasTemperature, gasDensity,abundances,size)
+        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,size
         REAL(dp), INTENT(in) :: abundances(:)
         INTEGER ::i,j
         CALL READ_COOLANTS()
@@ -29,59 +29,18 @@ CONTAINS
                                           & coolants(i)%DENSITY,gasTemperature, &
                                           & coolants(i)%POPULATION)
         END DO
+        CLOUD_SIZE=size
         ! coolantIndices(ncool+1)=nspec
         !Here I could find the reactions that give chemical heating and cooling
         !and store species indices in an array
     END SUBROUTINE initializeHeating
 
 
-
-    FUNCTION getEquilibriumTemp(gasTemperature,gasDensity,habingField,abundances,h2dis,zeta,cIonRate)
-        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,zeta,cIonRate
-        REAL(dp) :: getEquilibriumTemp
-        REAL(dp) :: abundances(:)
-        REAL(dp) :: adiabaticIdx,heating,cooling,fMax=5.0d-6,fRatio,maxTemp=1.0d6,minTemp=5.0d0
-        INTEGER :: maxTempIter=100,ti
-
-        maxTemp=1.0d6
-        minTemp=5.0d0
-        !initial guess is current temperature
-        getEquilibriumTemp=gasTemperature
-
-        !find heating and cooling rate for current temp
-        heating=getHeatingRate(gasTemperature,gasDensity,habingField,abundances,h2dis,zeta,cIonRate)
-        cooling=getCoolingRate(gasTemperature,gasDensity,abundances,h2dis)
-
-         !then get measure of their differences
-        fRatio=2.0D0*abs(heating-cooling)/abs(heating+cooling)
-        !write(*,*) ti,getEquilibriumTemp,heating,Cooling,fRatio
-
-        !whilst that difference is large, change temp to reduce it
-        IF (fRatio .gt. fMax) THEN
-            DO ti=1,maxTempIter
-                !if heating>cooling gas is too cold so minTemp is at least current temp
-                IF (heating .gt. cooling) minTemp=getEquilibriumTemp
-                !equally cooling implies temp can't be larger than current.
-                IF (cooling .gt. heating) maxTemp=getEquilibriumTemp
-                !take average of min and max to get new trial
-                getEquilibriumTemp=(minTemp+maxTemp)*0.5d0
-
-                !recalculate heatnig,cooling and ratio
-                heating=getHeatingRate(getEquilibriumTemp,gasDensity,habingField,abundances,h2dis,zeta,cIonRate)
-                cooling=getCoolingRate(getEquilibriumTemp,gasDensity,abundances,h2dis)
-                fRatio=2.0D0*abs(heating-cooling)/abs(heating+cooling)
-                IF (fRatio .lt. fMax) exit
-                IF (abs(minTemp-maxTemp).lt.0.5) exit
-                !write(*,*) ti,getEquilibriumTemp,heating,Cooling,minTemp,maxTemp
-            END DO
-        ELSE
-            getEquilibriumTemp=gasTemperature
-        END IF
-    END FUNCTION getEquilibriumTemp
-
-    REAL(dp) FUNCTION getTempDot(gasTemperature,gasDensity,habingField,abundances,h2dis,zeta,cIonRate)
-        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,zeta,cIonRate
-        REAL(dp) :: abundances(:)
+    REAL(dp) FUNCTION getTempDot(gasTemperature,gasDensity,habingField,abundances,h2dis,zeta,cIonRate,dustAbundance&
+                                &,exoReactants1,exoReactants2,exoRates,exothermicities)
+        !Habing field is radfield diminished by Av
+        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,zeta,cIonRate,dustAbundance
+        REAL(dp), INTENT(in) :: abundances(:),exoReactants1(:),exoReactants2(:),exoRates(:),exothermicities(:)
         REAL(dp) adiabaticIdx,heating,cooling
 
         !First calculate adiabatic index - should use number density but that's just an additional common factor
@@ -89,7 +48,8 @@ CONTAINS
         adiabaticIdx=adiabaticIdx/(3.0*(abundances(nh)+abundances(nhe)+abundances(nelec)+abundances(nh2))+2.0*abundances(nh2))
 
         !then calculate overall heating/cooling rate
-        heating=getHeatingRate(gasTemperature,gasDensity,habingField,abundances,h2dis,zeta,cIonRate)
+        heating=getHeatingRate(gasTemperature,gasDensity,habingField,abundances,h2dis,zeta,cIonRate,dustAbundance&
+            &,exoReactants1,exoReactants2,exoRates,exothermicities)
         !write(*,*) "Total Heating", heating
 
         IF (gasTemperature .gt. 5.0) THEN
@@ -109,9 +69,10 @@ CONTAINS
     END FUNCTION getTempDot
 
 
-    REAL(dp) FUNCTION getHeatingRate(gasTemperature,gasDensity,habingField,abundances,h2dis,zeta,cIonRate)
-        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,zeta,cIonRate
-        REAL(dp), DIMENSION(*):: abundances
+    REAL(dp) FUNCTION getHeatingRate(gasTemperature,gasDensity,habingField,abundances,h2dis,zeta,cIonRate,dustAbundance&
+                                    &,exoReactants1,exoReactants2,exoRates,exothermicities)
+        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,zeta,cIonRate,dustAbundance
+        REAL(dp), INTENT(IN):: abundances(:),exoReactants1(:),exoReactants2(:),exoRates(:),exothermicities(:)
         REAL(dp) :: heatingMode
 
             heatingMode=photoelectricHeating(gasTemperature,gasDensity,habingField,abundances(nelec))
@@ -122,20 +83,26 @@ CONTAINS
             !write(*,*) heatingMode, "H2 Form"
             getHeatingRate=getHeatingRate+heatingMode
 
-            heatingMode=H2PhotodisHeating(gasDensity,abundances(nh2),h2dis)
-            !write(*,*) heatingMode, "H2 Dis"
-            getHeatingRate=getHeatingRate+heatingMode
-          
-            heatingMode=cosmicRayHeating(zeta,gasDensity,abundances(nh2))
-            !write(*,*) heatingMode, "CR Heating"
-            getHeatingRate=getHeatingRate+heatingMode
-          
             heatingMode=h2FUVPumpHeating(abundances(nh),abundances(nh2),gasTemperature,gasDensity,h2dis)
             !write(*,*) heatingMode, "H2 FUV pump"
             getHeatingRate=getHeatingRate+heatingMode
 
+            heatingMode=H2PhotodisHeating(gasDensity,abundances(nh2),h2dis)
+            !write(*,*) heatingMode, "H2 Dis"
+            getHeatingRate=getHeatingRate+heatingMode
+          
             heatingMode=CarbonIonizationHeating(cIonRate,abundances(nc),gasDensity)
             !write(*,*) heatingMode, "C ionization"
+            getHeatingRate=getHeatingRate+heatingMode
+
+            heatingMode=cosmicRayHeating(zeta,gasDensity,abundances(nh2))
+            !write(*,*) heatingMode, "CR Heating"
+            getHeatingRate=getHeatingRate+heatingMode
+
+            heatingMode=chemicalHeating(gasDensity,exoReactants1,exoReactants2,exoRates,exothermicities)
+            getHeatingRate=getHeatingRate+heatingMode
+          
+            heatingMode=gasGrainCollisions(gasTemperature,gasDensity,dustAbundance)
             getHeatingRate=getHeatingRate+heatingMode
     END FUNCTION getHeatingRate
 
@@ -373,17 +340,31 @@ CONTAINS
     ! !-----------------------------------------------------------------------
     REAL(dp) FUNCTION photoelectricHeating(gasTemperature,gasDensity,habingField,electronAbund)
         REAL(dp), INTENT(IN) :: gasTemperature,gasDensity,habingField,electronAbund
-        REAL(dp), PARAMETER ::C0=5.72D+0,C1=3.45D-2,C2=7.08D-3
-        REAL(dp), PARAMETER ::C3=1.98D-2, C4=4.95D-1,C5=6.92D-1
-        REAL(dp), PARAMETER ::C6=5.20D-1
+        REAL(dp), PARAMETER :: PHI_PAH=0.4d0,ALPHA=0.944D0
+        REAL(dp) :: beta,delta,epsilon,nElec,PAH_HEATING_RATE,PAH_COOLING_RATE
+        ! REAL(dp), PARAMETER ::C0=5.72D+0,C1=3.45D-2,C2=7.08D-3
+        ! REAL(dp), PARAMETER ::C3=1.98D-2, C4=4.95D-1,C5=6.92D-1
+        ! REAL(dp), PARAMETER ::C6=5.20D-1
 
-        photoelectricHeating=1.0D-26*(habingField*gasDensity)*(C0+C1*gasTemperature**C4) &
-                & /(1.0D0+C2*(habingField*SQRT(gasTemperature)/(gasDensity*electronAbund))**C5  &
-                & *(1.0D0+C3*(habingField*SQRT(gasTemperature)/(gasDensity*electronAbund))**C6))
+        ! !Weingartner & Draine2001
+        ! photoelectricHeating=1.0D-26*(habingField*gasDensity)*(C0+C1*gasTemperature**C4) &
+        !         & /(1.0D0+C2*(habingField*SQRT(gasTemperature)/(gasDensity*electronAbund))**C5  &
+        !         & *(1.0D0+C3*(habingField*SQRT(gasTemperature)/(gasDensity*electronAbund))**C6))
 
+        !Bakes & Tielens 1994 with updates from Wolfire 2008
+        !  Adopt the PAH rate scaling factor of Wolfire et al. (2008, ApJ, 680, 384)
+        !  Setting this factor to 1.0 gives the standard Bakes & Tielens expression
+
+        nElec=electronAbund*gasDensity
+        BETA=0.735D0/gasTemperature**0.068
+        DELTA=habingField*SQRT(gasTemperature)/(nElec*PHI_PAH)
+        EPSILON=4.87D-2/(1.0D0+4.0D-3*DELTA**0.73) + 3.65D-2*(gasTemperature/1.0D4)**0.7/(1.0D0+2.0D-4*DELTA)
+
+        PAH_HEATING_RATE=1.30D-24*EPSILON*habingField*gasDensity
+        PAH_COOLING_RATE=4.65D-30*gasTemperature**ALPHA*(DELTA**BETA)*nElec*PHI_PAH*gasDensity
+        photoelectricHeating=PAH_HEATING_RATE-PAH_COOLING_RATE
     ! !  Assume the PE heating rate scales linearly with metallicity
     !    photoelectricHeating=photoelectricHeating*METALLICITY
-
     END FUNCTION photoelectricHeating
 
     ! !-----------------------------------------------------------------------
@@ -539,15 +520,13 @@ END FUNCTION
 ! !  (cm^3 s^-1), and E the energy released (erg).
 ! !-----------------------------------------------------------------------
 
-!    CHEMICAL_HEATING_RATE = &
-!     & + DENSITY(nH2x) *DENSITY(nelect)*(REACTION_RATE(nR_H2x_1) *(10.9*eV)) & ! H2+ + e-
-!     & + DENSITY(nH2x) *DENSITY(nH)    *(REACTION_RATE(nR_H2x_2) *(0.94*eV)) & ! H2+ + H
-!     & + DENSITY(nH3x) *DENSITY(nelect)*(REACTION_RATE(nR_H3x_1) *(9.23*eV)+REACTION_RATE(nR_H3x_2)*(4.76*eV)) & ! H3+ + e-
-!     & + DENSITY(nH3Ox)*DENSITY(nelect)*(REACTION_RATE(nR_H3Ox_1)*(1.16*eV)+REACTION_RATE(nR_H3Ox_2)*(5.63*eV)+REACTION_RATE(nR_H3Ox_3)*(6.27*eV)) & ! H3O+ + e-
-!     & + DENSITY(nHCOx)*DENSITY(nelect)*(REACTION_RATE(nR_HCOx_1)*(7.51*eV)) & ! HCO+ + e-
-!     & + DENSITY(nHex) *DENSITY(nH2)   *(REACTION_RATE(nR_Hex_1) *(6.51*eV)+REACTION_RATE(nR_Hex_2)*(6.51*eV)) & ! He+ + H2
-!     & + DENSITY(nHex) *DENSITY(nCO)   *(REACTION_RATE(nR_Hex_3) *(2.22*eV)+REACTION_RATE(nR_Hex_4)*(2.22*eV))   ! He+ + CO
+Function chemicalHeating(gasDensity,exoReactants1,exoReactants2,exoRates,exothermicities)
+REAL(dp), INTENT(IN) :: gasDensity,exoReactants1(:),exoReactants2(:),exoRates(:),exothermicities(:)
+REAL(dp) :: chemicalHeating
 
+    chemicalHeating=SUM(exoReactants1*exoReactants2*exoRates*exothermicities)
+    chemicalHeating=chemicalHeating*gasDensity*gasDensity*EV !each abundance should be a number dnesity to multiply through
+  END FUNCTION chemicalHeating
 ! !-----------------------------------------------------------------------
 ! !  Gas-grain collisional heating
 ! !
@@ -564,17 +543,22 @@ END FUNCTION
 ! !  lower than the gas temperature, this becomes a cooling mechanism.
 ! !-----------------------------------------------------------------------
 
-!    N_GRAIN=PARTICLE%DUST_DENSITY
-!    C_GRAIN=PI*GRAIN_RADIUS**2
+FUNCTION gasGrainCollisions(gasTemperature,gasDensity,dustAbundance)
+    real(dp), intent(in) :: gasTemperature,gasDensity,dustAbundance
+    REAL(dp) :: gasGrainCollisions
+    REAL(dp) :: nGrain,accommodation,dustTemp=20.0,C_GRAIN
+    nGrain=dustAbundance*gasDensity
+    C_GRAIN=PI*1.d-5**2
 
-! !!$!  Accommodation fitting formula of Groenewegen (1994, A&A, 290, 531)
-! !!$   ACCOMMODATION=0.35D0*EXP(-SQRT((DUST_TEMPERATURE+gasTemperature)/5.0D2))+0.1D0
+    !!$!  Accommodation fitting formula of Groenewegen (1994, A&A, 290, 531)
+    !!$   ACCOMMODATION=0.35D0*EXP(-SQRT((DUST_TEMPERATURE+gasTemperature)/5.0D2))+0.1D0
 
-! !  Accommodation coefficient of Burke & Hollenbach (1983, ApJ, 265, 223)
-!    ACCOMMODATION=0.37D0*(1.0D0-0.8D0*EXP(-75.0D0/gasTemperature))
+    !  Accommodation coefficient of Burke & Hollenbach (1983, ApJ, 265, 223)
+    accommodation=0.37D0*(1.0D0-0.8D0*EXP(-75.0D0/gasTemperature))
 
-!    GAS_GRAIN_HEATING_RATE=N_GRAIN*C_GRAIN*GAS_DENSITY*SQRT(8*K_BOLTZ*gasTemperature/(PI*MH)) &
-!                        & *ACCOMMODATION*(2*K_BOLTZ*DUST_TEMPERATURE-2*K_BOLTZ*gasTemperature)
+    gasGrainCollisions=nGrain*C_GRAIN*gasDensity*SQRT(8*K_BOLTZ*gasTemperature/(PI*MH)) &
+                       & *accommodation*(2*K_BOLTZ*dustTemp-2*K_BOLTZ*gasTemperature)
+END FUNCTION gasGrainCollisions
 
 
 
@@ -759,3 +743,49 @@ END MODULE heating
 
 ! !  Assume the PE heating rate scales linearly with metallicity
 !    BT94_PHOTOELECTRIC_HEATING_RATE=BT94_PHOTOELECTRIC_HEATING_RATE*METALLICITY
+
+    ! FUNCTION getEquilibriumTemp(gasTemperature,gasDensity,habingField,abundances,h2dis,zeta,cIonRate,dustAbundance&
+    !     &,exoReactants1,exoReactants2,exoRates,exothermicities)
+    !     REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,zeta,cIonRate,dustAbundance
+    !     REAL(dp) :: getEquilibriumTemp
+    !     REAL(dp), INTENT(in) :: abundances(:),exoReactants1(:),exoReactants2(:),exoRates(:),exothermicities(:)
+    !     REAL(dp) :: adiabaticIdx,heating,cooling,fMax=5.0d-6,fRatio,maxTemp=1.0d6,minTemp=5.0d0
+    !     INTEGER :: maxTempIter=100,ti
+
+    !     maxTemp=1.0d6
+    !     minTemp=5.0d0
+    !     !initial guess is current temperature
+    !     getEquilibriumTemp=gasTemperature
+
+    !     !find heating and cooling rate for current temp
+    !     heating=getHeatingRate(gasTemperature,gasDensity,habingField,abundances,h2dis,zeta,cIonRate,dustAbundance&
+    !         &,exoReactants1,exoReactants2,exoRates,exothermicities)
+    !     cooling=getCoolingRate(gasTemperature,gasDensity,abundances,h2dis)
+
+    !      !then get measure of their differences
+    !     fRatio=2.0D0*abs(heating-cooling)/abs(heating+cooling)
+    !     !write(*,*) ti,getEquilibriumTemp,heating,Cooling,fRatio
+
+    !     !whilst that difference is large, change temp to reduce it
+    !     IF (fRatio .gt. fMax) THEN
+    !         DO ti=1,maxTempIter
+    !             !if heating>cooling gas is too cold so minTemp is at least current temp
+    !             IF (heating .gt. cooling) minTemp=getEquilibriumTemp
+    !             !equally cooling implies temp can't be larger than current.
+    !             IF (cooling .gt. heating) maxTemp=getEquilibriumTemp
+    !             !take average of min and max to get new trial
+    !             getEquilibriumTemp=(minTemp+maxTemp)*0.5d0
+
+    !             !recalculate heatnig,cooling and ratio
+    !             heating=getHeatingRate(getEquilibriumTemp,gasDensity,habingField,abundances,h2dis,zeta,cIonRate,dustAbundance&
+    !                 &,exoReactants1,exoReactants2,exoRates,exothermicities)
+    !             cooling=getCoolingRate(getEquilibriumTemp,gasDensity,abundances,h2dis)
+    !             fRatio=2.0D0*abs(heating-cooling)/abs(heating+cooling)
+    !             IF (fRatio .lt. fMax) exit
+    !             IF (abs(minTemp-maxTemp).lt.0.5) exit
+    !             !write(*,*) ti,getEquilibriumTemp,heating,Cooling,minTemp,maxTemp
+    !         END DO
+    !     ELSE
+    !         getEquilibriumTemp=gasTemperature
+    !     END IF
+    ! END FUNCTION getEquilibriumTemp

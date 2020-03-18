@@ -13,6 +13,7 @@ import os
 
 reactionFile = 'inputFiles/umist12-ucledit.csv'
 reactionFile_grain = 'inputFiles/uclgrainbasic.csv'
+exotherm_file='inputFiles/reaction_energy.csv'
 speciesFile = 'inputFiles/uclspeciesbasic.csv'
 
 if not os.path.exists('outputFiles'):
@@ -35,6 +36,7 @@ speciesList=remove_duplicate_species(speciesList)
 # Store user reactions (grain file) that are filtered out in list to write out
 nReactions1, reactions1, dropped_reactions = read_reaction_file(reactionFile, speciesList,'UMIST')
 nReactions2, reactions2, dropped_reactions = read_reaction_file(reactionFile_grain,speciesList,'UCL')
+nExotherms, exotherm_reacs,dropped_reactions = read_reaction_file(exotherm_file,speciesList,'UCL')
 reactionList=reactions1+reactions2
 reactionList=add_desorb_reactions(speciesList,reactionList)
 
@@ -95,7 +97,7 @@ print('\tFinal ODE file:',filename)
 
 print('Writing Network File...')
 filename= 'outputFiles/network.f90'
-write_network_file(filename,speciesList,reactionList)
+write_network_file(filename,speciesList,reactionList,exotherm_reacs)
 print('\tFinal Network file:',filename)
 
 ngrain=0

@@ -1,2 +1,5 @@
 initialDens 1.0d3
 initialTemp 1.0d2
+radfield 292
+rout 50.0
+columnFile "output/av_grid/16.dat"

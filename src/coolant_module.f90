@@ -28,6 +28,7 @@ MODULE COOLANT_MODULE
       REAL(dp) :: DENSITY ! Total number density of the species (cm^-3)
       REAL(dp) :: LINEWIDTH ! Doppler line width of the species (cm s^-1)
 
+
       REAL(dp), ALLOCATABLE :: POPULATION(:) ! Population density (cm^-3) of each level
       REAL(dp), ALLOCATABLE :: PREVIOUS_POPULATION(:) ! Population density calculated at the previous iteration step
       REAL(dp), ALLOCATABLE :: EMISSIVITY(:,:) ! Local emissivity (erg cm^-3 s^-1) of each transition
@@ -40,13 +41,15 @@ MODULE COOLANT_MODULE
 
 
    TYPE(COOLANT_TYPE), allocatable :: coolants(:)
-   integer,PARAMETER :: NCOOL=9
-   CHARACTER(*), PARAMETER :: coolantFiles(NCOOL)=(/"12c+_nometa.dat","16o.dat        ","12c.dat        ",&
-            &"12co.dat       ","p-h2.dat       ","o-h2.dat       ","28si+.dat      ","p-h2o.dat      ","o-h2o.dat      "/)
-   CHARACTER(*), PARAMETER :: coolantNames(NCOOL)=(/"C+ ","O  ","C  ","CO ","H2 ","H2 ","SI+","H2O","H2O"/)
+   integer,PARAMETER :: NCOOL=7
+   CHARACTER(*), PARAMETER :: coolantFiles(NCOOL)=(/"ly-a.dat       ","12c+_nometa.dat","16o.dat        ","12c.dat        ",&
+            &"12co.dat       ","p-h2.dat       ","o-h2.dat       "/)
+   CHARACTER(*), PARAMETER :: coolantNames(NCOOL)=(/"H  ","C+ ","O  ","C  ","CO ","H2 ","H2 "/)
    ! CHARACTER(*), PARAMETER :: coolantFiles(NCOOL)=(/"12co.dat       ","p-h2.dat       ","o-h2.dat       ","p-h2o.dat      ","o-h2o.dat      "/)
    ! CHARACTER(*), PARAMETER :: coolantNames(NCOOL)=(/"CO ","H2 ","H2 ","H2O","H2O"/)
    INTEGER :: coolantIndices(NCOOL)
+   REAL(dp) :: CLOUD_SIZE
+
 
 CONTAINS
    !=======================================================================
@@ -317,7 +320,7 @@ CONTAINS
                
                !geometric distance between two particles
                !UCLPDR does this with particles along ray and get euler distance between them
-               STEP_SIZE = 0.005*PC
+               STEP_SIZE = CLOUD_SIZE
                ! STEP_SIZE=5.0d16
 !                    Line opacity of the coolant transition (i,j) using the Trapezium integration method (default)
 
