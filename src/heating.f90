@@ -11,8 +11,8 @@ IMPLICIT NONE
 
 CONTAINS
 
-    SUBROUTINE initializeHeating(gasTemperature, gasDensity,abundances,size)
-        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,size
+    SUBROUTINE initializeHeating(gasTemperature, gasDensity,abundances,columnDensity)
+        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,columnDensity
         REAL(dp), INTENT(in) :: abundances(:)
         INTEGER ::i,j
         CALL READ_COOLANTS()
@@ -22,25 +22,24 @@ CONTAINS
             END DO
         END DO
 
-        CALL UPDATE_COOLANT_LINEWIDTHS(gasTemperature)
-        DO i=1,NCOOL
-            coolants(i)%DENSITY=abundances(coolantIndices(i))*gasDensity
-            CALL CALCULATE_LTE_POPULATIONS(coolants(i)%NLEVEL,coolants(i)%ENERGY,coolants(i)%WEIGHT, &
-                                          & coolants(i)%DENSITY,gasTemperature, &
-                                          & coolants(i)%POPULATION)
-        END DO
-        CLOUD_SIZE=size
+        CLOUD_COLUMN=columnDensity
+        CLOUD_DENSITY=gasDensity
+        write(15,*) "Lyman-alpha C+ O C CO p-H2 o-H2 "
+        write(16,*) "Photoelectric H2Formation FUVPumping Photodissociation Cionization CRheating Chemheating turbHeating gasGrainColls"
+
         ! coolantIndices(ncool+1)=nspec
         !Here I could find the reactions that give chemical heating and cooling
         !and store species indices in an array
     END SUBROUTINE initializeHeating
 
 
-    REAL(dp) FUNCTION getTempDot(gasTemperature,gasDensity,habingField,abundances,h2dis,zeta,cIonRate,dustAbundance&
-                                &,exoReactants1,exoReactants2,exoRates,exothermicities)
+    REAL(dp) FUNCTION getTempDot(gasTemperature,gasDensity,habingField,abundances,h2dis,h2form,zeta,cIonRate,dustAbundance&
+                                &,exoReactants1,exoReactants2,exoRates,exothermicities,writeFlag,dustTemp,turbVel)
         !Habing field is radfield diminished by Av
-        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,zeta,cIonRate,dustAbundance
+        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,h2form,zeta,cIonRate,dustAbundance,dustTemp,turbVel
         REAL(dp), INTENT(in) :: abundances(:),exoReactants1(:),exoReactants2(:),exoRates(:),exothermicities(:)
+        LOGICAL, INTENT(IN) :: writeFlag
+
         REAL(dp) adiabaticIdx,heating,cooling
 
         !First calculate adiabatic index - should use number density but that's just an additional common factor
@@ -48,12 +47,12 @@ CONTAINS
         adiabaticIdx=adiabaticIdx/(3.0*(abundances(nh)+abundances(nhe)+abundances(nelec)+abundances(nh2))+2.0*abundances(nh2))
 
         !then calculate overall heating/cooling rate
-        heating=getHeatingRate(gasTemperature,gasDensity,habingField,abundances,h2dis,zeta,cIonRate,dustAbundance&
-            &,exoReactants1,exoReactants2,exoRates,exothermicities)
+        heating=getHeatingRate(gasTemperature,gasDensity,habingField,abundances,h2dis,h2form,zeta,cIonRate,dustAbundance&
+            &,exoReactants1,exoReactants2,exoRates,exothermicities,dustTemp,turbVel)
         !write(*,*) "Total Heating", heating
 
-        IF (gasTemperature .gt. 5.0) THEN
-            cooling=getCoolingRate(gasTemperature,gasDensity,abundances,h2dis)
+        IF (gasTemperature .gt. 10.0) THEN
+            cooling=getCoolingRate(gasTemperature,gasDensity,abundances,h2dis,turbVel,writeFlag)
         ELSE
             Cooling=0.0
         END IF
@@ -69,95 +68,96 @@ CONTAINS
     END FUNCTION getTempDot
 
 
-    REAL(dp) FUNCTION getHeatingRate(gasTemperature,gasDensity,habingField,abundances,h2dis,zeta,cIonRate,dustAbundance&
-                                    &,exoReactants1,exoReactants2,exoRates,exothermicities)
-        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,zeta,cIonRate,dustAbundance
+    REAL(dp) FUNCTION getHeatingRate(gasTemperature,gasDensity,habingField,abundances,h2dis,h2form,zeta,cIonRate,dustAbundance&
+                                    &,exoReactants1,exoReactants2,exoRates,exothermicities,dustTemp,turbVel)
+        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,h2form,zeta,cIonRate,dustAbundance,dustTemp,turbVel
         REAL(dp), INTENT(IN):: abundances(:),exoReactants1(:),exoReactants2(:),exoRates(:),exothermicities(:)
-        REAL(dp) :: heatingMode
+        REAL(dp) :: heatingMode,L_TURB=5.0d0
+        REAL(dp) :: photoelec,h2forming,fuvpumping,photodis,cionizing,crheating,chemheating,gasgraincolls
 
-            heatingMode=photoelectricHeating(gasTemperature,gasDensity,habingField,abundances(nelec))
+            photoelec=photoelectricHeating(gasTemperature,gasDensity,habingField,abundances(nelec))
             !write(*,*) heatingMode, "photoelectric"
-            getHeatingRate=heatingMode
+            getHeatingRate=photoelec
 
-            heatingMode=H2FormationHeating(gasTemperature,gasDensity,abundances(nh))
+            h2forming=H2FormationHeating(gasTemperature,gasDensity,abundances(nh),h2form)
             !write(*,*) heatingMode, "H2 Form"
-            getHeatingRate=getHeatingRate+heatingMode
+            getHeatingRate=getHeatingRate+h2forming
 
-            heatingMode=h2FUVPumpHeating(abundances(nh),abundances(nh2),gasTemperature,gasDensity,h2dis)
+            fuvpumping=h2FUVPumpHeating(abundances(nh),abundances(nh2),gasTemperature,gasDensity,h2dis)
             !write(*,*) heatingMode, "H2 FUV pump"
-            getHeatingRate=getHeatingRate+heatingMode
+            getHeatingRate=getHeatingRate+fuvpumping
 
-            heatingMode=H2PhotodisHeating(gasDensity,abundances(nh2),h2dis)
+            photodis=H2PhotodisHeating(gasDensity,abundances(nh2),h2dis)
             !write(*,*) heatingMode, "H2 Dis"
-            getHeatingRate=getHeatingRate+heatingMode
+            getHeatingRate=getHeatingRate+photodis
           
-            heatingMode=CarbonIonizationHeating(cIonRate,abundances(nc),gasDensity)
+            cionizing=CarbonIonizationHeating(cIonRate,abundances(nc),gasDensity)
             !write(*,*) heatingMode, "C ionization"
-            getHeatingRate=getHeatingRate+heatingMode
+            getHeatingRate=getHeatingRate+cionizing
 
-            heatingMode=cosmicRayHeating(zeta,gasDensity,abundances(nh2))
+            crheating=cosmicRayHeating(zeta,gasDensity,abundances(nh2))
             !write(*,*) heatingMode, "CR Heating"
+            getHeatingRate=getHeatingRate+crheating
+
+            chemheating=chemicalHeating(gasDensity,exoReactants1,exoReactants2,exoRates,exothermicities)
+            getHeatingRate=getHeatingRate+chemheating
+
+            heatingMode=3.5D-28*((turbVel/1.0D5)**3)*(1.0D0/L_TURB)*gasDensity
             getHeatingRate=getHeatingRate+heatingMode
 
-            heatingMode=chemicalHeating(gasDensity,exoReactants1,exoReactants2,exoRates,exothermicities)
-            getHeatingRate=getHeatingRate+heatingMode
-          
-            heatingMode=gasGrainCollisions(gasTemperature,gasDensity,dustAbundance)
-            getHeatingRate=getHeatingRate+heatingMode
+            gasgraincolls=gasGrainCollisions(gasTemperature,gasDensity,dustAbundance,dustTemp)
+            getHeatingRate=getHeatingRate+gasgraincolls
+            write(16,*) photoelec,h2forming,fuvpumping,photodis,cionizing,crheating,chemheating,heatingmode,gasgraincolls
     END FUNCTION getHeatingRate
 
-    REAL(dp) FUNCTION getCoolingRate(gasTemperature,gasDensity,abundances,h2dis)
-        REAL(dp), INTENT(IN) :: gasTemperature,gasDensity,h2dis
+    REAL(dp) FUNCTION getCoolingRate(gasTemperature,gasDensity,abundances,h2dis,turbVel,writeFlag)
+        REAL(dp), INTENT(IN) :: gasTemperature,gasDensity,h2dis,turbVel
         REAL(dp), INTENT(IN) :: abundances(:)
+        LOGICAL, INTENT(IN) :: writeFlag
         real(dp) :: coolingMode, coolings(5)
         INTEGER :: ti
 
 
-        ! coolingMode=atomicCooling(gasTemperature,gasDensity,abundances(nh),abundances(nhe),&
-        !                         &abundances(nelec),abundances(nhx),abundances(nhex))
-        ! write(*,*) coolingMode, "atomic"
-        ! getCoolingRate=coolingMode
+         ! coolingMode=atomicCooling(gasTemperature,gasDensity,abundances(nh),abundances(nhe),&
+         !                         &abundances(nelec),abundances(nhx),abundances(nhex))
+         ! ! write(*,*) coolingMode, "atomic"
+         ! getCoolingRate=coolingMode
 
-        ! coolingMode=collionallyInducedEmission(gasTemperature,gasDensity,abundances(nh2))
-        ! write(*,*) coolingMode, "CIE"
-        ! getCoolingRate=getCoolingRate+coolingMode
+         ! coolingMode=collionallyInducedEmission(gasTemperature,gasDensity,abundances(nh2))
+         ! ! write(*,*) coolingMode, "CIE"
+         ! getCoolingRate=getCoolingRate+coolingMode
         
-        ! coolingMode=comptonCooling(gasTemperature,gasDensity,abundances(nelec))
-        ! write(*,*) coolingMode, "Compton"
-        ! getCoolingRate=getCoolingRate+coolingMode
+         ! coolingMode=comptonCooling(gasTemperature,gasDensity,abundances(nelec))
+         ! ! write(*,*) coolingMode, "Compton"
+         ! getCoolingRate=getCoolingRate+coolingMode
 
-        ! coolingMode=continuumEmission(gasTemperature,gasDensity)
-        ! write(*,*) coolingMode, "Continuum"
-        ! getCoolingRate=getCoolingRate+coolingMode
+         ! coolingMode=continuumEmission(gasTemperature,gasDensity)
+         ! ! write(*,*) coolingMode, "Continuum"
+         ! getCoolingRate=getCoolingRate+coolingMode
 
-        ! coolingMode=H2VibrationalCooling(gasTemperature,gasDensity,abundances(nh2),h2dis)
-        ! write(*,*) coolingMode, "H2 Vibrational"
-        ! getCoolingRate=getCoolingRate+coolingMode
+         ! coolingMode=H2VibrationalCooling(gasTemperature,gasDensity,abundances(nh2),h2dis)
+         ! ! write(*,*) coolingMode, "H2 Vibrational"
+         ! getCoolingRate=getCoolingRate+coolingMode
         getCoolingRate=0.0D0
         DO ti=1,5
-            coolings(ti)=lineCooling(gasTemperature,gasDensity,abundances)
+            coolings(ti)=lineCooling(gasTemperature,gasDensity,abundances,turbVel,writeFlag)
         END DO
         call pair_insertion_sort(coolings)
         coolingMode=coolings(3)
-        ! write(*,*) "Line cooling"
-        ! write(*,*) coolings, coolingMode
+         ! write(*,*) "Line cooling"
+         ! write(*,*) coolingMode
         getCoolingRate=getCoolingRate+coolingMode
     END FUNCTION getCoolingRate
 
 
-    !Put fits from Neufeld here.
-    REAL(dp) FUNCTION simpleLineCooling(gasTemperature,gasDensity,abundances)
-        REAL(dp), INTENT(IN) :: gasTemperature,gasDensity,abundances(:)
-        simpleLineCooling=0.0
-    END FUNCTION simpleLineCooling 
+    REAL(dp) FUNCTION lineCooling(gasTemperature,gasDensity,abundances,turbVel,writeFlag)
+        REAL(dp), INTENT(IN) :: gasTemperature,gasDensity,abundances(:),turbVel
+        LOGICAL, INTENT(IN) :: writeFlag
 
-
-    REAL(dp) FUNCTION lineCooling(gasTemperature,gasDensity,abundances)
-        REAL(dp), INTENT(IN) :: gasTemperature,gasDensity,abundances(:)
         INTEGER :: N,I!, collisionalIndices(5)=(/nh,nhx,nh2,nhe,nelec/)
-        real(dp) :: moleculeCooling=0.0
+        real(dp) :: moleculeCooling(NCOOL)=0.0
 
-        CALL UPDATE_COOLANT_LINEWIDTHS(gasTemperature)
+        CALL UPDATE_COOLANT_LINEWIDTHS(gasTemperature,turbVel)
         DO N=1,NCOOL
             coolants(N)%DENSITY=abundances(coolantIndices(N))*gasDensity
             CALL CALCULATE_LTE_POPULATIONS(coolants(N)%NLEVEL,coolants(N)%ENERGY,coolants(N)%WEIGHT, &
@@ -196,7 +196,7 @@ CONTAINS
         !Calculate the cooling rates
         lineCooling=0.0
         DO N=1,NCOOL
-            moleculeCooling=SUM(coolants(N)%EMISSIVITY,MASK=.NOT.ISNAN(coolants(N)%EMISSIVITY))
+            moleculeCooling(N)=SUM(coolants(N)%EMISSIVITY,MASK=.NOT.ISNAN(coolants(N)%EMISSIVITY))
 
             ! !we get these wild changes in cooling rate so let's force it not to change too much in a timestep
             ! IF ( (abs(moleculeCooling-coolants(N)%previousCooling)/coolants(N)%previousCooling) .gt. 2.0d0) THEN
@@ -205,8 +205,11 @@ CONTAINS
             ! ELSE
             !     coolants(N)%previousCooling=moleculeCooling
             ! END IF
-            IF (moleculeCooling .gt. -1.0d-30 .and. abundances(coolantIndices(N)) .gt. 1.0d-20) lineCooling= lineCooling+moleculeCooling
+            IF (moleculeCooling(N) .lt. -1.0d-30) moleculeCooling(N)=0.0d0
+            !IF (moleculeCooling(N) .gt. -1.0d-30 .and. abundances(coolantIndices(N)) .gt. 1.0d-20) 
+            lineCooling= lineCooling+moleculeCooling(N)
         END DO
+        IF (writeFlag) write(15,*) moleculeCooling
         !!write(*,*) lineCooling
     END FUNCTION lineCooling
 
@@ -378,9 +381,9 @@ CONTAINS
     !! JH: I replaced REACTION_RATE(nRGR) with chemistry.f90's h2form=1.0d-17*dsqrt(Y(NEQ-1))
 
     ! !-----------------------------------------------------------------------
-    REAL(dp) FUNCTION H2FormationHeating(gasTemperature,gasDensity,hAbund)
-        REAL(dp), INTENT(IN) :: gasTemperature,gasDensity,hAbund
-        H2FormationHeating=(1.5*eV)*1.0d-17*dsqrt(gasTemperature)*hAbund*gasDensity*gasDensity
+    REAL(dp) FUNCTION H2FormationHeating(gasTemperature,gasDensity,hAbund,h2form)
+        REAL(dp), INTENT(IN) :: gasTemperature,gasDensity,hAbund,h2form
+        H2FormationHeating=(1.5*eV)*h2form*hAbund*gasDensity*gasDensity
     END FUNCTION H2FormationHeating
 
 
@@ -543,22 +546,121 @@ REAL(dp) :: chemicalHeating
 ! !  lower than the gas temperature, this becomes a cooling mechanism.
 ! !-----------------------------------------------------------------------
 
-FUNCTION gasGrainCollisions(gasTemperature,gasDensity,dustAbundance)
-    real(dp), intent(in) :: gasTemperature,gasDensity,dustAbundance
+FUNCTION gasGrainCollisions(gasTemperature,gasDensity,dustAbundance,dustTemp)
+    real(dp), intent(in) :: gasTemperature,gasDensity,dustAbundance,dustTemp
     REAL(dp) :: gasGrainCollisions
-    REAL(dp) :: nGrain,accommodation,dustTemp=20.0,C_GRAIN
+    REAL(dp) :: nGrain,accommodation,C_GRAIN
     nGrain=dustAbundance*gasDensity
     C_GRAIN=PI*1.d-5**2
 
     !!$!  Accommodation fitting formula of Groenewegen (1994, A&A, 290, 531)
-    !!$   ACCOMMODATION=0.35D0*EXP(-SQRT((DUST_TEMPERATURE+gasTemperature)/5.0D2))+0.1D0
+    !!$   ACCOMMODATION=0.35D0*EXP(-SQRT((dustTemperature+gasTemperature)/5.0D2))+0.1D0
 
     !  Accommodation coefficient of Burke & Hollenbach (1983, ApJ, 265, 223)
     accommodation=0.37D0*(1.0D0-0.8D0*EXP(-75.0D0/gasTemperature))
 
-    gasGrainCollisions=nGrain*C_GRAIN*gasDensity*SQRT(8*K_BOLTZ*gasTemperature/(PI*MH)) &
-                       & *accommodation*(2*K_BOLTZ*dustTemp-2*K_BOLTZ*gasTemperature)
+    gasGrainCollisions=nGrain*C_GRAIN*gasDensity*SQRT(8.0*K_BOLTZ*gasTemperature/(PI*MH)) &
+                       & *accommodation*2.0*K_BOLTZ*(dustTemp-gasTemperature)
 END FUNCTION gasGrainCollisions
+
+!=======================================================================
+!
+!  Calculate the dust temperature for each particle using the treatment
+!  of Hollenbach, Takahashi & Tielens (1991, ApJ, 377, 192, eqns 5 & 6)
+!  for the heating due to the incident FUV photons and the treatment of
+!  Meijerink & Spaans (2005, A&A, 436, 397, eqn B.6) for heating due to
+!  the incident flux of X-ray photons.
+!
+!  Among other things, the dust temperature can influence:
+!
+!     1) Cooling budget by emitting FIR photons that
+!        interact with the line radiative transfer;
+!     2) Gas-grain collisional heating or cooling rate;
+!     3) H2 formation by changing the sticking probability;
+!     4) Evaporation and condensation of molecules on grains.
+!
+!  The formula derived by Hollenbach, Takahashi & Tielens (1991) has
+!  been modified to include the attenuation of the IR radiation. The
+!  incident FUV radiation is absorbed and re-emitted in the infrared
+!  by dust at the surface of the cloud (up to Av ~ 1mag). In the HTT
+!  derivation, this IR radiation then serves as a second heat source
+!  for dust deeper into the cloud. However, in their treatment, this
+!  second re-radiated component is not attenuated with distance into
+!  the cloud so it is *undiluted* with depth, leading to higher dust
+!  temperatures deep within the cloud which in turn heat the gas via
+!  collisions to unrealistically high temperatures. Models with high
+!  gas densities and high incident FUV fluxes (e.g. n_H = 10^5 cm-3,
+!  X_0 = 10^8 Draine) can produce T_gas ~ 100 K at Av ~ 50 mag!
+!
+!  Attenuation of the FIR radiation has therefore been introduced by
+!  using an approximation for the infrared-only dust temperature from
+!  Rowan-Robinson (1980, eqn 30b):
+!
+!  T_dust = T_0*(r/r_0)^(-0.4)
+!
+!  where r_0 is the cloud depth at which T_dust = T_0, corresponding
+!  to an A_V of ~ 1 mag, the assumed size of the outer region of the
+!  cloud that processes the incident FUV radiation and then re-emits
+!  it in the FIR (see the original HTT 1991 paper for details). This
+!  should prevent the dust temperature from dropping off too rapidly
+!  with distance and maintain a larger warm dust region (~50-100 K).
+!
+!-----------------------------------------------------------------------
+FUNCTION calculateDustTemp(localField,surfaceField) result(dustTemperature)
+    USE constants
+    IMPLICIT NONE
+    !UV field in Habing at this depth and at surface required for this calculation
+    !Both in Habing as required for this treatment
+    REAL(dp), INTENT(IN) :: localField,surfaceField 
+    REAL(dp) :: dustTemperature
+
+    REAL(KIND=DP) :: NU_0,R_0,T_0,TAU_100
+
+    !Parameters used in the HHT equations (see their paper for details)
+    NU_0=2.65D15
+    TAU_100=1.0D-3
+    R_0=1.0D0/avFactor
+
+    !Calculate the contribution to the dust temperature from the local FUV flux and the CMB background
+    !UCLPDR had afactor of 1.7 which I assume was Habing conversion so removed
+    dustTemperature=8.9D-11*NU_0*localField+T_CMB**5
+
+
+    !The minimum dust temperature is related to the incident FUV flux along each ray
+    T_0=12.2*surfaceField**0.2
+
+    !!Attenuate the FIR radiation produced in the surface layer
+    !!JH why is this commented?
+    !IF(PARTICLE(P)%TOTAL_COLUMN(J).GT.R_0) THEN
+    !     T_0=T_0*(PARTICLE(P)%TOTAL_COLUMN(J)/R_0)**(-0.4)
+    !END IF
+
+    !        Add the contribution to the dust temperature from the FUV flux incident along this ray
+    IF(T_0.GT.0) dustTemperature=dustTemperature &
+          & + (0.42-LOG(3.45D-2*TAU_100*T_0))*(3.45D-2*TAU_100*T_0)*T_0**5
+
+
+    !Convert from total dust emission intensity to dust temperature
+    dustTemperature=dustTemperature**0.2
+
+    !Calculate the contribution to the dust temperature from the local X-ray flux (assuming a fixed grain abundance of 1.6E-8)
+    !JH We have no xrays sthis
+    !dustTemperature=dustTemperature+1.5D4*(XRAY_ENERGY_DEPOSITION_RATE/1.6D-8)**0.2
+
+    !Impose a lower limit on the dust temperature, since values below 10 K can dramatically
+    !limit the rate of H2 formation on grains (the molecule cannot desorb from the surface)
+    IF(dustTemperature.LT.10) THEN
+        dustTemperature=10.0D0
+    END IF
+
+    !     Check that the dust temperature is physical
+    IF(dustTemperature.GT.1000) THEN
+        WRITE(6,*) 'ERROR! Calculated dust temperature exceeds 1000 K'
+        STOP
+    END IF
+    RETURN
+END FUNCTION calculateDustTemp
+!=======================================================================
 
 
 

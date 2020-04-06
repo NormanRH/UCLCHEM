@@ -15,6 +15,9 @@ MODULE CONSTANTS
    REAL(dp), PARAMETER :: EV = 1.60217646D-12 ! electron volt in erg
    REAL(dp), PARAMETER :: GRAV_G = 6.674d-8 !gravitational constant in cgs
    REAL(dp), PARAMETER :: SB_CONST=5.6704d-5 !Stefan Boltzmann constant in cgs
+   REAL(dp), PARAMETER :: avFactor=1.6d-21
+
+   
 CONTAINS
     SUBROUTINE pair_insertion_sort(array)
     REAL(dp), INTENT(inout) :: array(:)

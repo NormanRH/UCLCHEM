@@ -41,7 +41,7 @@ MODULE physics
     DOUBLE PRECISION,PARAMETER :: volctemp(6)=(/84.0,86.3,88.2,89.5,90.4,92.2/)
     DOUBLE PRECISION,PARAMETER :: codestemp(6)=(/95.0,97.5,99.4,100.8,101.6,103.4/)
 
-    DOUBLE PRECISION, allocatable :: av(:),coldens(:),gasTemp(:),density(:),monoFracCopy(:)
+    DOUBLE PRECISION, allocatable :: av(:),coldens(:),gasTemp(:),dustTemp(:),density(:),monoFracCopy(:)
 
 CONTAINS
 !THIS IS WHERE THE REQUIRED PHYSICS ELEMENTS BEGIN.
@@ -53,8 +53,8 @@ CONTAINS
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     SUBROUTINE initializePhysics
         ! Modules not restarted in python wraps so best to reset everything manually.
-        IF (ALLOCATED(av)) DEALLOCATE(av,coldens,gasTemp,density,monoFracCopy)
-        ALLOCATE(av(points),coldens(points),gasTemp(points),density(points),monoFracCopy(size(monoFractions)))
+        IF (ALLOCATED(av)) DEALLOCATE(av,coldens,gasTemp,dustTemp,density,monoFracCopy)
+        ALLOCATE(av(points),coldens(points),gasTemp(points),dustTemp(points),density(points),monoFracCopy(size(monoFractions)))
         coflag=0 !reset sublimation
         monoFracCopy=monoFractions !reset monofractions
 
@@ -80,10 +80,10 @@ CONTAINS
             switch=0
         END IF
 
-        !calculate initial column density as distance from core edge to current point * density
-        DO dstep=1,points
-            coldens(dstep)=real(points-dstep+1)*cloudSize/real(points)*initialDens
-        END DO
+        ! !calculate initial column density as distance from core edge to current point * density
+        ! DO dstep=1,points
+        !     coldens(dstep)=real(points-dstep+1)*cloudSize/real(points)*initialDens
+        ! END DO
     END SUBROUTINE
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -114,16 +114,18 @@ CONTAINS
         SUBROUTINE updatePhysics
         !calculate column density. Remember dstep counts from core centre to edge
         !and coldens should be amount of gas from edge to parcel.
-        IF (dstep .lt. points) THEN
-            !column density of current point + column density of all points further out
-            coldens(dstep)=(cloudSize/real(points))*density(dstep)
-            coldens(dstep)=coldens(dstep)+sum(coldens(dstep:points))
-        ELSE
-            coldens(dstep)=cloudSize/real(points)*density(dstep)
-        END IF
+        ! IF (dstep .lt. points) THEN
+        !     !column density of current point + column density of all points further out
+        !     coldens(dstep)=(cloudSize/real(points))*density(dstep)
+        !     coldens(dstep)=coldens(dstep)+sum(coldens(dstep:points))
+        ! ELSE
+        !     coldens(dstep)=cloudSize/real(points)*density(dstep)
+        ! END IF
 
         !calculate the Av using an assumed extinction outside of core (baseAv), depth of point and density
-        av(dstep)= baseAv +coldens(dstep)/1.6d21
+        !CHANGED TO MATCH UCL_PDR, should find most agreed value after benchmarking
+        av(dstep)= coldens(dstep)*avFactor
+
 
         IF (phase .eq. 2 .and. gasTemp(dstep) .lt. maxTemp) THEN
         !Below we include temperature profiles for hot cores, selected using tempindx

@@ -13,6 +13,7 @@ USE physics
 USE dvode_f90_m
 USE network
 USE heating
+USE photoreactions
 USE constants
 IMPLICIT NONE
    !These integers store the array index of important species and reactions, x is for ions    
@@ -37,7 +38,7 @@ IMPLICIT NONE
     TYPE(VODE_OPTS) :: OPTIONS
 
     !initial fractional elemental abudances and arrays to store abundances
-    REAL(dp) :: fh,fhe,fc,fo,fn,fs,fmg,fsi,fcl,fp,ff,h2col,cocol,junk1,junk2
+    REAL(dp) :: fh,fhe,fc,fo,fn,fs,fmg,fsi,fcl,fp,ff,h2col,cocol,ccol,junk1,junk2
     REAL(dp),allocatable :: abund(:,:),mantle(:)
     
     !Variables controlling chemistry
@@ -45,12 +46,9 @@ IMPLICIT NONE
     REAL(dp) :: ebmaxh2,epsilon,ebmaxcrf,ebmaxcr,phi,ebmaxuvcr,uvy,uvcreff
     REAL(dp), allocatable ::vdiff(:)
 
-    !Variables for self-shielding of CO and H2
-    !dopw = doppler width (in s-1) of a typical transition
-    !(assuming turbulent broadening with beta=3e5cms-1)
-    !radw = radiative line width of typ. transition (in s-1)
-    !fosc = oscillator strength of a typical transition
-    REAL(dp)  :: dopw=3.0e10,radw=8.0e07,xl=1000.0,fosc  = 1.0d-2,taud,UV_FAC=3.02
+    !Turbulent velocity of gas in cm/s for heating functions
+    REAL(dp)  :: turbVel=1.0d5 !1 km/s in cm/s
+
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !variables for diffusion reactions on the grains, CGS unless otherwise stated.
@@ -65,30 +63,6 @@ IMPLICIT NONE
     REAL(dp), parameter :: GRAIN_DENSITY = 3.0 ! Mass density of a dust grain
     REAL(dp), parameter :: NUM_SITES_PER_GRAIN = GRAIN_RADIUS*GRAIN_RADIUS*SURFACE_SITE_DENSITY*4.0*PI
     REAL(dp), parameter :: GAS_DUST_DENSITY_RATIO = (4.0*PI*(GRAIN_RADIUS**3)*GRAIN_DENSITY*GAS_DUST_MASS_RATIO)/(3.0 * AMU)
- 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !CO and H2 self-shielding
-    !Used by functions in rates.f90
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    logical :: startr=.True.
-    integer,parameter :: dimco=7, dimh2=6
-    REAL(dp) :: corates(7,6)=reshape((/0.000d+00, -1.408d-02, -1.099d-01, -4.400d-01,&
-     &  -1.154d+00, -1.888d+00, -2.760d+00,&
-     &  -8.539d-02, -1.015d-01, -2.104d-01, -5.608d-01,&
-     &  -1.272d+00, -1.973d+00, -2.818d+00,&
-     &  -1.451d-01, -1.612d-01, -2.708d-01, -6.273d-01,&
-     &  -1.355d+00, -2.057d+00, -2.902d+00,&
-     &  -4.559d-01, -4.666d-01, -5.432d-01, -8.665d-01,&
-     &  -1.602d+00, -2.303d+00, -3.146d+00,&
-     &  -1.303d+00, -1.312d+00, -1.367d+00, -1.676d+00,&
-     &  -2.305d+00, -3.034d+00, -3.758d+00,&
-     &  -3.883d+00, -3.888d+00, -3.936d+00, -4.197d+00,&
-     &  -4.739d+00, -5.165d+00, -5.441d+00 /),shape(corates))
-    REAL(dp) :: y2r(7,6)
-    REAL(dp) :: ncogr(dimco) =(/12.0d+00, 13.0d+00, 14.0d+00, 15.0d+00,&
-      &16.0d+00, 17.0d+00, 18.0d+00 /)
-    REAL(dp) :: nh2gr(dimh2)=(/18.0d+00, 19.0d+00, 20.0d+00, 21.0d+00,&
-       &22.0d+00, 23.0d+00 /)
 CONTAINS
 !This gets called immediately by main so put anything here that you want to happen before the time loop begins, reader is necessary.
     SUBROUTINE initializeChemistry
@@ -102,15 +76,15 @@ CONTAINS
             !ensure abund is initially zero
             abund= 0.0D0
             !As default, have half in molecular hydrogen and half in atomic hydrogen
-            abund(nh2,:) = 0.5*(0.5*(1.0e0-fh))
-            abund(nh,:) = (0.5*(1.0e0-fh))     
+            abund(nh,:) = fh     
+            abund(nh2,:) = (0.5*(1.0e0-fh))
             abund(nhe,:) = fhe                       
             abund(no,:) = fo  
-            abund(nn,:) = fn               
-            abund(nsx,:) = fs
+            !abund(nn,:) = fn               
+            !abund(nsx,:) = fs
             abund(nmg,:) = fmg
-            abund(nsix,:) = fsi                
-            abund(nclx,:) = fcl 
+            !abund(nsix,:) = fsi                
+            !abund(nclx,:) = fcl 
             !abund(np,:) = fp
             !abund(nf,:) = ff
 
@@ -119,19 +93,19 @@ CONTAINS
             abund(NEQ-1,:)=gasTemp
             abund(NEQ,:)=density      
 
-            !Decide how much iron is initiall ionized using parameters.f90
+            !Decide how much carbon is initially ionized using parameters.f90
             SELECT CASE (ion)
                 CASE(0)
                     abund(nc,:)=fc
-                    abund(ncx,:)=1.d-10
+                    abund(ncx,:)=0.0
                 CASE(1)
                     abund(nc,:)=fc*0.5
                     abund(ncx,:)=fc*0.5
                 CASE(2)
-                    abund(nc,:)=1.d-10
+                    abund(nc,:)=0.0
                     abund(ncx,:)=fc
             END SELECT
-            abund(nspec,:)=abund(ncx,:)+abund(nsix,:)+abund(nsx,:)+abund(nclx,:)
+            abund(nspec,:)=abund(ncx,:)!+abund(nsix,:)+abund(nsx,:)+abund(nclx,:)
 
         ENDIF
         !Initial calculations of diffusion frequency for each species bound to grain
@@ -143,7 +117,6 @@ CONTAINS
         END DO
 
         !h2 formation rate initially set
-        h2form = 1.0d-17*dsqrt(initialTemp)
         ALLOCATE(mantle(points))
         DO l=1,points
             mantle(l)=sum(abund(grainList,l))
@@ -157,8 +130,11 @@ CONTAINS
             ALLOCATE(abstol(NEQ))
         END IF
         !OPTIONS = SET_OPTS(METHOD_FLAG=22, ABSERR_VECTOR=abstol, RELERR=reltol,USER_SUPPLIED_JACOBIAN=.FALSE.)
+        CALL initializeHeating(initialTemp,initialDens,abund(:,1),colDens(dstep))
+
+        if (columnFlag) write(11,333) specName(outIndx)
+        333 format("Time,Density,gasTemp,dustTemp,av,",(999(A,:,',')))
         
-        CALL initializeHeating(initialTemp,initialDens,abund(:,1),cloudSize)
     END SUBROUTINE initializeChemistry
 
 !Reads input reaction and species files as well as the final step of previous run if this is phase 2
@@ -255,8 +231,8 @@ CONTAINS
         !choose species you're interested in by looking at parameters.f90
         IF ((writeCounter==writeStep .or. timeInYears .lt. 1000.0) .and. columnFlag) THEN
             writeCounter=1
-            write(11,8030) timeInYears,density(dstep),gasTemp(dstep),av(dstep),abund(outIndx,dstep)
-            8030  format(1pe11.3,1x,1pe11.4,1x,0pf8.2,1x,0pf8.5,10(1x,1pe10.3))
+            write(11,8030) timeInYears,density(dstep),gasTemp(dstep),dustTemp(dstep),av(dstep),abund(outIndx,dstep)
+            8030  format(1pe11.3,',',1pe11.4,',',0pf8.2,',',0pf8.2,',',1pe11.4,',',(999(1pe10.3,:,',')))
         ELSE
             writeCounter=writeCounter+1
         END IF
@@ -270,21 +246,21 @@ CONTAINS
 
         !allow option for dens to have been changed elsewhere.
         IF (collapse .ne. 1) abund(NEQ,dstep)=density(dstep)
-        !y is at final value of previous depth iteration so set to initial values of this depth with abund
-        !reset other variables for good measure        
-        h2form = 1.0d-17*dsqrt(gasTemp(dstep))
     
         !Sum of abundaces of all mantle species. mantleindx stores the indices of mantle species.
         mantle(dstep)=sum(abund(grainList,dstep))
         !evaluate co and h2 column densities for use in rate calculations
         !sum column densities of each point up to dstep. boxlength and dens are pulled out of the sum as common factors  
         IF (dstep.gt.1) THEN
-            h2col=(sum(abund(nh2,:dstep-1)*density(:dstep-1))+0.5*abund(nh2,dstep)*density(dstep))*(cloudSize/real(points))
+            !h2col=(sum(abund(nh2,:dstep-1)*density(:dstep-1))+0.5*abund(nh2,dstep)*density(dstep))*(cloudSize/real(points))
             cocol=(sum(abund(nco,:dstep-1)*density(:dstep-1))+0.5*abund(nco,dstep)*density(dstep))*(cloudSize/real(points))
         ELSE
-            h2col=abund(nh2,dstep)*density(dstep)*(cloudSize/real(points))
+            !h2col=abund(nh2,dstep)*density(dstep)*(cloudSize/real(points))
             cocol=abund(nco,dstep)*density(dstep)*(cloudSize/real(points))
         ENDIF
+
+        !
+
 
         !call the actual ODE integrator
         CALL integrate
@@ -305,12 +281,21 @@ CONTAINS
             reltol=1e-4 !relative tolerance effectively sets decimal place accuracy
             abstol=1.0d-14!*abund(:,dstep) !absolute tolerances depend on value of abundance
             WHERE(abstol<1d-30) abstol=1d-30 ! to a minimum degree
-            !get reaction rates for this iteration
-            CALL calculateReactionRates
-            h2form=1.0d-17*dsqrt(gasTemp(dstep))
 
-            tempDot=getTempDot(abund(NEQ-1,dstep),abund(NEQ,dstep),radfield*EXP(-UV_FAC*av(dstep)),abund(:,dstep),h2dis,zeta,rate(nR_C_hv),&
-                &1.0/GAS_DUST_DENSITY_RATIO,abund(exoReactants1,dstep),abund(exoReactants2,dstep),RATE(exoReacIdxs),exothermicities)
+            !get reaction rates for this iteration - do it here since we may reloop a few times
+            !First get dust temperature - requires local and surface field in Habing
+            dustTemp(dstep)=calculateDustTemp(radfield*EXP(-UV_FAC*av(dstep)),radfield)
+            !Then we can use that to get H2 formation rate
+            h2form=h2FormRate(gasTemp(dstep),dustTemp(dstep))!1.0d-17*dsqrt(gasTemp(dstep))
+
+            !Finally calculate all other rates
+            CALL calculateReactionRates
+
+            !Tempdot is only recalculated after change in temperature of 1 degree so we force a calculation here
+            tempDot=getTempDot(abund(NEQ-1,dstep),abund(NEQ,dstep),radfield*EXP(-UV_FAC*av(dstep)),abund(:,dstep),h2dis,h2form,zeta,rate(nR_C_hv),&
+                &1.0/GAS_DUST_DENSITY_RATIO,abund(exoReactants1,dstep),abund(exoReactants2,dstep),RATE(exoReacIdxs),exothermicities,.True.,&
+                &dustTemp(dstep),turbVel)
+            
             !Call the integrator.
             OPTIONS = SET_OPTS(METHOD_FLAG=22, ABSERR_VECTOR=abstol, RELERR=reltol,USER_SUPPLIED_JACOBIAN=.FALSE.,MXSTEP=MXSTEP)
             CALL DVODE_F90(F,NEQ,abund(:,dstep),currentTime,targetTime,ITASK,ISTATE,OPTIONS)
@@ -368,14 +353,6 @@ CONTAINS
         !of the reactions between it and every other species it reacts with.
         INCLUDE 'odes.f90'
 
-        !updated just in case temp changed
-        !h2form=1.0d-17*dsqrt(Y(NEQ-1))
-
-        ! write(*,*) "F odes",h2form,h2dis
-        ! write(*,*) y(neq-1),ydot(nh),y(nh2),y(nh),D
-        ! write(*,*) "***"
-
-
         !H2 formation should occur at both steps - however note that here there is no 
         !temperature dependence. y(nh) is hydrogen fractional abundance.
         ydot(nh)  = ydot(nh) - 2.0*( h2form*y(nh)*D - h2dis*y(nh2) )
@@ -388,8 +365,8 @@ CONTAINS
         IF (heatingFlag) THEN
             IF (ABS(y(NEQ-1)-oldTemp).gt.1) THEN
                 ! write(*,*) "recalc!"
-                tempDot=getTempDot(Y(NEQ-1),Y(NEQ),radfield*EXP(-UV_FAC*av(dstep)),Y,h2dis,zeta,rate(nR_C_hv),1.0/GAS_DUST_DENSITY_RATIO&
-                    &,y(exoReactants1),y(exoReactants2),RATE(exoReacIdxs),exothermicities)
+                tempDot=getTempDot(Y(NEQ-1),Y(NEQ),radfield*EXP(-UV_FAC*av(dstep)),Y,h2dis,h2form,zeta,rate(nR_C_hv),1.0/GAS_DUST_DENSITY_RATIO&
+                    &,y(exoReactants1),y(exoReactants2),RATE(exoReacIdxs),exothermicities,.False.,dustTemp(dstep),turbVel)
                 oldTemp=y(NEQ-1)
             END IF
             ydot(NEQ-1)=tempDot

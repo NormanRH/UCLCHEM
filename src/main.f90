@@ -21,7 +21,6 @@ IMPLICIT NONE
 
     heatingFlag=.False.
 
-
     dstep=1
     currentTime=0.0
     timeInYears=0.0
@@ -30,6 +29,10 @@ IMPLICIT NONE
     CALL initializePhysics
     CALL initializeChemistry
     
+    ccol=4.400112d07
+    h2col=1.100312d11
+    coldens=1.600000d14
+    cloudSize=1.600000d11
     close(10)
     !loop until the end condition of the model is reached 
     DO WHILE ((switch .eq. 1 .and. density(1) < finalDens) .or. (switch .eq. 0 .and. timeInYears < finalTime))

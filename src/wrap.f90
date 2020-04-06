@@ -1,16 +1,19 @@
-SUBROUTINE GENERAL(dictionary, outSpeciesIn)
+SUBROUTINE GENERAL(dictionary, outSpeciesIn,results_dir,model_no)
     USE physics
     USE chemistry
     IMPLICIT NONE
     CHARACTER (LEN=100) :: abundFile, outputFile, columnFile, outFile
-    CHARACTER(LEN=*) :: dictionary, outSpeciesIn
-    INTEGER :: posStart, posEnd, whileInteger, numberSpecies, fileFormat
+    CHARACTER(LEN=*) :: dictionary, outSpeciesIn,results_dir,model_no
+    INTEGER :: posStart, posEnd, whileInteger, numberSpecies
     CHARACTER(LEN=100) :: inputParameter, inputValue
-
+    REAL(dp) :: colDensIn
     include 'defaultparameters.f90'
     close(10)
     close(11)
     close(7)
+
+    open(15,file=results_dir//"cooling/"//model_no//".dat",status="unknown")
+    open(16,file=results_dir//"heating/"//model_no//".dat",status="unknown")
 
     IF (scan(dictionary, 'columnFile') .EQ. 0) THEN
         columnFlag=.False.
@@ -35,6 +38,12 @@ SUBROUTINE GENERAL(dictionary, outSpeciesIn)
         dictionary = dictionary(posEnd:)
 
         SELECT CASE (inputParameter)
+            CASE('h2col') 
+                READ(inputValue,*) h2col
+            CASE('ccol') 
+                READ(inputValue,*) ccol
+            CASE('coldens') 
+                READ(inputValue,*) colDensIn
             CASE('initialTemp')
                 READ(inputValue,*) initialTemp
             CASE('maxTemp')
@@ -85,6 +94,8 @@ SUBROUTINE GENERAL(dictionary, outSpeciesIn)
                 READ(inputValue,*) ion
             CASE('tempindx')
                 READ(inputValue,*) tempindx
+            CASE('fh')
+                READ(inputValue,*) fh
             CASE('fhe')
                 READ(inputValue,*) fhe
             CASE('fc')
@@ -106,10 +117,24 @@ SUBROUTINE GENERAL(dictionary, outSpeciesIn)
             CASE('ff')
                 READ(inputValue,*) ff
             CASE('outSpecies')
-                IF(.not.ALLOCATED(outSpecies)) THEN
-                    READ(inputValue,*) numberSpecies
-                    ALLOCATE(outSpecies(numberSpecies))
-                    outSpecies = outSpeciesIn
+                IF (ALLOCATED(outIndx)) DEALLOCATE(outIndx)
+                IF (ALLOCATED(outSpecies)) DEALLOCATE(outSpecies)
+                READ(inputValue,*) nout
+                ALLOCATE(outIndx(nout))
+                ALLOCATE(outSpecies(nout))
+                IF (outSpeciesIn .eq. "") THEN
+                    write(*,*) "Outspecies parameter set but no outspecies string given"
+                    write(*,*) "general(parameter_dict,outSpeciesIn) requires a delimited string of species names"
+                    write(*,*) "if outSpecies or columnFlag is set in the parameter dictionary"
+                    STOP
+                ELSE
+                    READ(outSpeciesIn,*, END=22) outSpecies
+                    IF (outSpeciesIn .eq. "") THEN
+22                      write(*,*) "mismatch between outSpeciesIn and number given in dictionary"
+                        write(*,*) "Number:",nout
+                        write(*,*) "Species list:",outSpeciesIn
+                        STOP
+                    END IF
                 END IF
             CASE('writeStep')
                 READ(inputValue,*) writeStep
@@ -158,13 +183,15 @@ SUBROUTINE GENERAL(dictionary, outSpeciesIn)
         END SELECT
     END DO
 
-
     dstep=1
     currentTime=0.0
     timeInYears=0.0
-    heatingFlag=.False.
+    heatingFlag=.True.
 
     CALL initializePhysics
+
+    colDens=colDensIn
+
     CALL initializeChemistry
 
     write(*,*) outSpecies(1),columnFlag,columnFile
@@ -181,9 +208,6 @@ SUBROUTINE GENERAL(dictionary, outSpeciesIn)
 
         !loop over parcels, counting from centre out to edge of cloud
         DO dstep=1,points
-
-            if (timeInYears .gt. 1) heatingFlag=.True.
-
             !update chemistry
             CALL updateChemistry
 
@@ -201,4 +225,9 @@ SUBROUTINE GENERAL(dictionary, outSpeciesIn)
             CALL output
         END DO
     END DO
+    CLOSE(10)
+    CLOSE(11)
+    CLOSE(7)
+    CLOSE(15)
+    CLOSE(16)
 END SUBROUTINE GENERAL

@@ -16,13 +16,13 @@ EXT_SUFFIX = $(shell python3-config --extension-suffix)
 
 ##physics module selected by changing physics variable to chosen fortran file.
 main: chemistry.o physics.o main.f90 dvode.o defaultparameters.f90 readparameters.f90
-	${FC} ${FFLAGS} -o ../uclchem swap_function.o constants.o physics.o dvode.o chemistry.o network.o heating.o coolant_module.o main.f90
+	${FC} ${FFLAGS} -o ../uclchem swap_function.o constants.o physics.o dvode.o chemistry.o network.o heating.o photoreactions.o coolant_module.o main.f90
 
 python: chemistry.o physics.o wrap.f90 dvode.o defaultparameters.f90
-	python3 -m numpy.f2py -c --fcompiler=${f2pyFC} swap_function.o constants.o physics.o dvode.o chemistry.o network.o heating.o coolant_module.o -m uclchem wrap.f90
+	python3 -m numpy.f2py -c --fcompiler=${f2pyFC} swap_function.o constants.o physics.o dvode.o chemistry.o network.o heating.o photoreactions.o coolant_module.o -m uclchem wrap.f90
 	mv *${EXT_SUFFIX} ../uclchem.so
 
-chemistry.o: odes.f90 rates.f90  chemistry.f90 network.o physics.o dvode.o heating.o
+chemistry.o: odes.f90 rates.f90  chemistry.f90 network.o physics.o dvode.o heating.o photoreactions.o
 	${FC} ${FFLAGS} -c chemistry.f90
 
 heating.o: swap_function.o coolant_module.o heating.f90

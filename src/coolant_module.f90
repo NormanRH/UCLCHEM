@@ -48,7 +48,7 @@ MODULE COOLANT_MODULE
    ! CHARACTER(*), PARAMETER :: coolantFiles(NCOOL)=(/"12co.dat       ","p-h2.dat       ","o-h2.dat       ","p-h2o.dat      ","o-h2o.dat      "/)
    ! CHARACTER(*), PARAMETER :: coolantNames(NCOOL)=(/"CO ","H2 ","H2 ","H2O","H2O"/)
    INTEGER :: coolantIndices(NCOOL)
-   REAL(dp) :: CLOUD_SIZE
+   REAL(dp) :: CLOUD_DENSITY,CLOUD_COLUMN
 
 
 CONTAINS
@@ -233,18 +233,20 @@ CONTAINS
    !  are included.
    !
    !-----------------------------------------------------------------------
-   SUBROUTINE UPDATE_COOLANT_LINEWIDTHS(GasTemperature)
+   SUBROUTINE UPDATE_COOLANT_LINEWIDTHS(GasTemperature,turbVel)
       IMPLICIT NONE
-      REAL(dp), INTENT(IN) :: GasTemperature
+      REAL(dp), INTENT(IN) :: GasTemperature,turbVel
+      REAL(dp) :: thermVel
       INTEGER :: N
 
-   !  Calculate the mean thermal velocity of each coolant species at the relevant
-   !  gas temperature for each particle. Update the Doppler line widths (cm s^-1)
-   !  by adding the thermal and turbulent velocities in quadrature.
-     DO N=1,NCOOL ! Loop over coolants
-      COOLANTS(N)%LINEWIDTH = SQRT(2*K_BOLTZ*GasTemperature/(coolants(N)%MOLECULAR_MASS*MH)) ! v_thermal = (2kT/m)^1/2
-     END DO ! End of loop over coolants
+      !calculate constant factors of thermal velocity
+      !keep it squared since we'll be adding in quadrature with turbVel
+      thermVel=2.0*K_BOLTZ*GasTemperature/MH
 
+      ! Loop over coolants
+      DO N=1,NCOOL 
+         COOLANTS(N)%LINEWIDTH = SQRT((thermVel/coolants(N)%MOLECULAR_MASS)+(turbVel*turbVel)) ! v_thermal = (2kT/m)^1/2
+      END DO ! End of loop over coolants
       RETURN
    END SUBROUTINE UPDATE_COOLANT_LINEWIDTHS
 
@@ -318,14 +320,12 @@ CONTAINS
                !Factor 1 combines constants: = A_ij.c^3/8π.nu_ij^3
                FACTOR1 = (coolants(N)%A_COEFF(ILEVEL,JLEVEL)*C**3)/(8*PI*coolants(N)%FREQUENCY(ILEVEL,JLEVEL)**3) 
                
-               !geometric distance between two particles
-               !UCLPDR does this with particles along ray and get euler distance between them
-               STEP_SIZE = CLOUD_SIZE
-               ! STEP_SIZE=5.0d16
-!                    Line opacity of the coolant transition (i,j) using the Trapezium integration method (default)
+               
+               !want to divide populations in factor3 by density of current and multiply by density of cloud 
+               !averaged over the column to surface then multply by distance to cloud surface
+               !that is (size*average_density/density) or column_density/density
+               STEP_SIZE = CLOUD_COLUMN/CLOUD_DENSITY
 
-               !Factor 2 - inverse average LINEWIDTH between the two points
-               !FACTOR2 = 2.0D0/(PARTICLE(L)%coolants(N)%LINEWIDTH+PARTICLE(M)%coolants(N)%LINEWIDTH) ! = 1/δv_D
                FACTOR2 = 1.0/coolants(N)%LINEWIDTH
   
                !Difference between average weight of ith level and average weight of jth level
@@ -885,7 +885,7 @@ END SUBROUTINE CALCULATE_COLLISIONAL_RATES
 LOGICAL FUNCTION CHECK_CONVERGENCE()
    INTEGER :: I,N
    REAL(dp) :: RELATIVE_CHANGE
-   REAL(dp), PARAMETER :: POPULATION_LIMIT=1.0D-12,POPULATION_CONVERGENCE_CRITERION=0.0001!pretty sure this is 0.1 in uclpdr
+   REAL(dp), PARAMETER :: POPULATION_LIMIT=1.0D-14,POPULATION_CONVERGENCE_CRITERION=0.0001!pretty sure this is 0.1 in uclpdr
    LOGICAL :: convergence(NCOOL)
 
       DO N=1,NCOOL ! Loop over coolants

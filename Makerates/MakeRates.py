@@ -14,7 +14,7 @@ import os
 reactionFile = 'inputFiles/umist12-ucledit.csv'
 reactionFile_grain = 'inputFiles/uclgrainbasic.csv'
 exotherm_file='inputFiles/reaction_energy.csv'
-speciesFile = 'inputFiles/uclspeciesbasic.csv'
+speciesFile = 'inputFiles/uclpdrspecies.csv'
 
 if not os.path.exists('outputFiles'):
     os.makedirs('outputFiles')
