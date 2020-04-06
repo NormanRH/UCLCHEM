@@ -1,4 +1,9 @@
+#no outputs
 output/
 *.dat
+*.png
+
+#no compiled files
+*.pyc
 *.so
 *.o
