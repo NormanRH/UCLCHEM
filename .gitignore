@@ -1,2 +1,4 @@
 output/
-benchmarking/*/*
+*.dat
+*.so
+*.o
