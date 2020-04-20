@@ -44,11 +44,11 @@ MODULE COOLANT_MODULE
    integer,PARAMETER :: NCOOL=7
    CHARACTER(*), PARAMETER :: coolantFiles(NCOOL)=(/"ly-a.dat       ","12c+_nometa.dat","16o.dat        ","12c.dat        ",&
             &"12co.dat       ","p-h2.dat       ","o-h2.dat       "/)
-   CHARACTER(*), PARAMETER :: coolantNames(NCOOL)=(/"H  ","C+ ","O  ","C  ","CO ","H2 ","H2 "/)
+   CHARACTER(*), PARAMETER :: coolantNames(NCOOL)=(/"H   ","C+  ","O   ","C   ","CO  ","p-H2","o-H2"/)
    ! CHARACTER(*), PARAMETER :: coolantFiles(NCOOL)=(/"12co.dat       ","p-h2.dat       ","o-h2.dat       ","p-h2o.dat      ","o-h2o.dat      "/)
    ! CHARACTER(*), PARAMETER :: coolantNames(NCOOL)=(/"CO ","H2 ","H2 ","H2O","H2O"/)
    INTEGER :: coolantIndices(NCOOL)
-   REAL(dp) :: CLOUD_DENSITY,CLOUD_COLUMN
+   REAL(dp) :: CLOUD_DENSITY,CLOUD_COLUMN,CLOUD_SIZE
 
 
 CONTAINS
@@ -250,6 +250,26 @@ CONTAINS
       RETURN
    END SUBROUTINE UPDATE_COOLANT_LINEWIDTHS
 
+
+   SUBROUTINE UPDATE_COOLANT_ABUNDANCES(gasDensity,gasTemperature,abundances)
+      IMPLICIT NONE
+      REAL(dp), INTENT(IN) :: gasDensity,gasTemperature,abundances(:)
+      REAL(dp) :: fraction
+      INTEGER :: N
+      DO N=1,NCOOL
+         IF (coolantNames(N).eq."p-H2") then
+             fraction=1.0D0/(1.0D0+ORTHO_PARA_RATIO(gasTemperature))
+             coolants(N)%density=abundances(coolantIndices(N))*gasDensity*fraction
+         ELSE IF (coolantNames(N) .eq. "o-H2") then
+             fraction=1.0D0/(1.0D0+1.0D0/ORTHO_PARA_RATIO(gasTemperature))
+             coolants(N)%density=abundances(coolantIndices(N))*gasDensity*fraction
+         ELSE
+             coolants(N)%density=abundances(coolantIndices(N))*gasDensity
+         END IF
+      END DO
+
+   END SUBROUTINE
+
    !=======================================================================
    !
    !  Calculate the level populations at LTE for the given species.
@@ -325,7 +345,7 @@ CONTAINS
                !averaged over the column to surface then multply by distance to cloud surface
                !that is (size*average_density/density) or column_density/density
                STEP_SIZE = CLOUD_COLUMN/CLOUD_DENSITY
-
+               !STEP_SIZE = CLOUD_SIZE!
                FACTOR2 = 1.0/coolants(N)%LINEWIDTH
   
                !Difference between average weight of ith level and average weight of jth level
@@ -885,7 +905,7 @@ END SUBROUTINE CALCULATE_COLLISIONAL_RATES
 LOGICAL FUNCTION CHECK_CONVERGENCE()
    INTEGER :: I,N
    REAL(dp) :: RELATIVE_CHANGE
-   REAL(dp), PARAMETER :: POPULATION_LIMIT=1.0D-14,POPULATION_CONVERGENCE_CRITERION=0.0001!pretty sure this is 0.1 in uclpdr
+   REAL(dp), PARAMETER :: POPULATION_LIMIT=1.0D-14,POPULATION_CONVERGENCE_CRITERION=0.1
    LOGICAL :: convergence(NCOOL)
 
       DO N=1,NCOOL ! Loop over coolants

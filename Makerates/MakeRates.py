@@ -11,7 +11,7 @@ from Functions import *
 import os
 
 
-reactionFile = 'inputFiles/umist12-ucledit.csv'
+reactionFile = 'inputFiles/umist12-uclpdredit.csv'
 reactionFile_grain = 'inputFiles/uclgrainbasic.csv'
 exotherm_file='inputFiles/reaction_energy.csv'
 speciesFile = 'inputFiles/uclpdrspecies.csv'

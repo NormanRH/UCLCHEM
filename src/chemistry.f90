@@ -130,7 +130,7 @@ CONTAINS
             ALLOCATE(abstol(NEQ))
         END IF
         !OPTIONS = SET_OPTS(METHOD_FLAG=22, ABSERR_VECTOR=abstol, RELERR=reltol,USER_SUPPLIED_JACOBIAN=.FALSE.)
-        CALL initializeHeating(initialTemp,initialDens,abund(:,1),colDens(dstep))
+        CALL initializeHeating(initialTemp,initialDens,abund(:,1),colDens(dstep),cloudSize)
 
         if (columnFlag) write(11,333) specName(outIndx)
         333 format("Time,Density,gasTemp,dustTemp,av,",(999(A,:,',')))

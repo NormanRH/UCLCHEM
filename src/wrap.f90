@@ -38,6 +38,10 @@ SUBROUTINE GENERAL(dictionary, outSpeciesIn,results_dir,model_no)
         dictionary = dictionary(posEnd:)
 
         SELECT CASE (inputParameter)
+            CASE('avFactor')
+                READ(inputValue,*) avFactor
+            CASE('heatingFlag') 
+                READ(inputValue,*) heatingFlag
             CASE('h2col') 
                 READ(inputValue,*) h2col
             CASE('ccol') 
@@ -186,14 +190,12 @@ SUBROUTINE GENERAL(dictionary, outSpeciesIn,results_dir,model_no)
     dstep=1
     currentTime=0.0
     timeInYears=0.0
-    heatingFlag=.True.
 
     CALL initializePhysics
 
     colDens=colDensIn
 
     CALL initializeChemistry
-
     write(*,*) outSpecies(1),columnFlag,columnFile
     !loop until the end condition of the model is reached
     DO WHILE ((switch .eq. 1 .and. density(1) < finalDens) .or. (switch .eq. 0 .and. timeInYears < finalTime))

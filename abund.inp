@@ -5,11 +5,12 @@ fo 3.0e-4
 fs 0.0
 fn 0.0
 ff 0.0
-fr 0.0
 fsi 0.0
 fcl 0.0
 fmg 5.00e-06
 ion 2
-radfield 2.89
-initialDens 1000.0
-zeta 1.23
+fr 0.0
+radfield 17
+initialDens 316228.0
+initialTemp 50.0
+zeta 3.84

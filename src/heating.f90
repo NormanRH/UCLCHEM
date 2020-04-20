@@ -11,21 +11,26 @@ IMPLICIT NONE
 
 CONTAINS
 
-    SUBROUTINE initializeHeating(gasTemperature, gasDensity,abundances,columnDensity)
-        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,columnDensity
+    SUBROUTINE initializeHeating(gasTemperature, gasDensity,abundances,columnDensity,cloudSize)
+        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,columnDensity,cloudSize
         REAL(dp), INTENT(in) :: abundances(:)
+        CHARACTER(5) :: coolName
         INTEGER ::i,j
         CALL READ_COOLANTS()
         DO i=1,ncool
+            coolName=coolantNames(i)
+            if (coolName .eq. "p-H2") coolName="H2"
+            if (coolName .eq. "o-H2") coolName="H2"
             DO j=1,nspec
-                if (coolantNames(i) .eq. specName(j)) coolantIndices(i)=j
+                if (coolName .eq. specName(j)) coolantIndices(i)=j
             END DO
         END DO
 
         CLOUD_COLUMN=columnDensity
         CLOUD_DENSITY=gasDensity
+        cloud_size=cloudSize
         write(15,*) "Lyman-alpha C+ O C CO p-H2 o-H2 "
-        write(16,*) "Photoelectric H2Formation FUVPumping Photodissociation Cionization CRheating Chemheating turbHeating gasGrainColls"
+        write(16,*) "Photoelectric H2Formation FUVPumping Photodissociation Cionization CRheating turbHeating Chemheating gasGrainColls"
 
         ! coolantIndices(ncool+1)=nspec
         !Here I could find the reactions that give chemical heating and cooling
@@ -51,12 +56,12 @@ CONTAINS
             &,exoReactants1,exoReactants2,exoRates,exothermicities,dustTemp,turbVel)
         !write(*,*) "Total Heating", heating
 
-        IF (gasTemperature .gt. 10.0) THEN
-            cooling=getCoolingRate(gasTemperature,gasDensity,abundances,h2dis,turbVel,writeFlag)
-        ELSE
-            Cooling=0.0
-        END IF
-
+        ! IF (gasTemperature .gt. 10.0) THEN
+        !     cooling=getCoolingRate(gasTemperature,gasDensity,abundances,h2dis,turbVel,writeFlag)
+        ! ELSE
+        !     Cooling=0.0
+        ! END IF
+        cooling=1.0d-16
         !write(*,*) "Total Cooling", Cooling
 
         getTempDot=heating-cooling
@@ -107,7 +112,7 @@ CONTAINS
 
             gasgraincolls=gasGrainCollisions(gasTemperature,gasDensity,dustAbundance,dustTemp)
             getHeatingRate=getHeatingRate+gasgraincolls
-            write(16,*) photoelec,h2forming,fuvpumping,photodis,cionizing,crheating,chemheating,heatingmode,gasgraincolls
+            write(16,*) photoelec,h2forming,fuvpumping,photodis,cionizing,crheating,heatingmode,chemheating,gasgraincolls
     END FUNCTION getHeatingRate
 
     REAL(dp) FUNCTION getCoolingRate(gasTemperature,gasDensity,abundances,h2dis,turbVel,writeFlag)
@@ -158,8 +163,9 @@ CONTAINS
         real(dp) :: moleculeCooling(NCOOL)=0.0
 
         CALL UPDATE_COOLANT_LINEWIDTHS(gasTemperature,turbVel)
+        CALL UPDATE_COOLANT_ABUNDANCES(gasDensity,gasTemperature,abundances)
         DO N=1,NCOOL
-            coolants(N)%DENSITY=abundances(coolantIndices(N))*gasDensity
+
             CALL CALCULATE_LTE_POPULATIONS(coolants(N)%NLEVEL,coolants(N)%ENERGY,coolants(N)%WEIGHT, &
                                           & coolants(N)%DENSITY,gasTemperature, &
                                           & coolants(N)%POPULATION)
@@ -169,7 +175,7 @@ CONTAINS
 
         !!write(*,*)  "lte done"
         !I should then do LVG interactions
-         DO I=1,100!while not converged and less than 100 tries:
+         DO I=1,200!while not converged and less than 100 tries:
             DO N=1,NCOOL
                 CALL CALCULATE_LEVEL_POPULATIONS(coolants(N),gasTemperature,gasDensity,&
                     &abundances)

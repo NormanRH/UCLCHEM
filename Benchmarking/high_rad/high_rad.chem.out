@@ -1,0 +1,1206 @@
+Particle = 1, t = 2.0E+6 yr, A_V = 0.0E+0 mag
+n_H = 1.0E+3 cm^-3, T_gas = 188.5 K
+Species = H
+
+H2 + PHOTON --> H + H Rate: +99%
+H+ + O --> H + O+ Rate: +1%
+
+H + H + --> H2 + Rate: -99%
+H + O+ --> O + H+ Rate: -1%
+
+Total Abundance = 1.000E+00
+Formation Rate = 8.755E-14 s^-1
+Destruction Rate = 8.755E-14 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1, t = 2.0E+6 yr, A_V = 0.0E+0 mag
+n_H = 1.0E+3 cm^-3, T_gas = 188.5 K
+Species = H2
+
+H + H + --> H2 + Rate:+100%
+
+H2 + PHOTON --> H + H Rate:-100%
+
+Total Abundance = 1.671E-06
+Formation Rate = 4.335E-14 s^-1
+Destruction Rate = 4.335E-14 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1, t = 2.0E+6 yr, A_V = 0.0E+0 mag
+n_H = 1.0E+3 cm^-3, T_gas = 188.5 K
+Species = C
+
+C+ + e- --> C + PHOTON Rate:+100%
+
+C + PHOTON --> C+ + e- Rate:-100%
+
+Total Abundance = 4.926E-10
+Formation Rate = 7.389E-17 s^-1
+Destruction Rate = 7.389E-17 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1, t = 2.0E+6 yr, A_V = 0.0E+0 mag
+n_H = 1.0E+3 cm^-3, T_gas = 188.5 K
+Species = CO
+
+H + CO+ --> CO + H+ Rate: +73%
+C+ + OH --> CO + H+ Rate: +27%
+
+CO + PHOTON --> O + C Rate:-100%
+
+Total Abundance = 5.677E-15
+Formation Rate = 5.677E-22 s^-1
+Destruction Rate = 5.677E-22 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1, t = 2.0E+6 yr, A_V = 0.0E+0 mag
+n_H = 1.0E+3 cm^-3, T_gas = 188.5 K
+Species = H+
+
+H + O+ --> H+ + O Rate: +99%
+H + CRP --> H+ + e- Rate: +1%
+
+H+ + O --> O+ + H Rate: -99%
+H+ + e- --> H + PHOTON Rate: -1%
+
+Total Abundance = 1.410E-05
+Formation Rate = 8.469E-16 s^-1
+Destruction Rate = 8.469E-16 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1, t = 2.0E+6 yr, A_V = 0.0E+0 mag
+n_H = 1.0E+3 cm^-3, T_gas = 188.5 K
+Species = O+
+
+H+ + O --> O+ + H Rate:+100%
+
+O+ + H --> O + H+ Rate:-100%
+
+Total Abundance = 1.673E-09
+Formation Rate = 8.386E-16 s^-1
+Destruction Rate = 8.386E-16 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1, t = 2.0E+6 yr, A_V = 0.0E+0 mag
+n_H = 1.0E+3 cm^-3, T_gas = 188.5 K
+Species = e-
+
+C + PHOTON --> e- + C+ Rate: +87%
+H + CRP --> e- + H+ Rate: +9%
+Mg + PHOTON --> e- + Mg+ Rate: +3%
+He + CRP --> e- + He+ Rate: +1%
+
+e- + C+ --> C + PHOTON Rate: -87%
+e- + H+ --> H + PHOTON Rate: -10%
+e- + Mg+ --> Mg + PHOTON Rate: -3%
+
+Total Abundance = 1.193E-04
+Formation Rate = 8.455E-17 s^-1
+Destruction Rate = 8.455E-17 s^-1
+
+================================================================================
+
+Particle = 571, t = 2.0E+6 yr, A_V = 9.9E-1 mag
+n_H = 1.0E+3 cm^-3, T_gas = 113.1 K
+Species = H
+
+H2 + PHOTON --> H + H Rate:+100%
+
+H + H + --> H2 + Rate:-100%
+
+Total Abundance = 5.522E-01
+Formation Rate = 6.574E-14 s^-1
+Destruction Rate = 3.631E-14 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 571, t = 2.0E+6 yr, A_V = 9.9E-1 mag
+n_H = 1.0E+3 cm^-3, T_gas = 113.1 K
+Species = H2
+
+H + H + --> H2 + Rate:+100%
+
+H2 + PHOTON --> H + H Rate:-100%
+
+Total Abundance = 2.239E-01
+Formation Rate = 1.816E-14 s^-1
+Destruction Rate = 3.288E-14 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 571, t = 2.0E+6 yr, A_V = 9.9E-1 mag
+n_H = 1.0E+3 cm^-3, T_gas = 113.1 K
+Species = C
+
+C+ + e- --> C + PHOTON Rate: +94%
+CH2+ + e- --> C + H + H Rate: +2%
+CH + PHOTON --> C + H Rate: +2%
+CH3+ + e- --> C + H2 + H Rate: +1%
+CH2+ + e- --> C + H2 Rate: +1%
+
+C + PHOTON --> C+ + e- Rate:-100%
+
+Total Abundance = 2.077E-08
+Formation Rate = 9.454E-17 s^-1
+Destruction Rate = 9.454E-17 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 571, t = 2.0E+6 yr, A_V = 9.9E-1 mag
+n_H = 1.0E+3 cm^-3, T_gas = 113.1 K
+Species = CO
+
+HCO+ + e- --> CO + H Rate: +52%
+C+ + OH --> CO + H+ Rate: +29%
+H + CO+ --> CO + H+ Rate: +16%
+CH2 + O --> CO + H + H Rate: +1%
+CH + O --> CO + H Rate: +1%
+CH2 + O --> CO + H2 Rate: +1%
+
+CO + PHOTON --> O + C Rate:-100%
+
+Total Abundance = 7.770E-12
+Formation Rate = 3.942E-20 s^-1
+Destruction Rate = 3.942E-20 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 571, t = 2.0E+6 yr, A_V = 9.9E-1 mag
+n_H = 1.0E+3 cm^-3, T_gas = 113.1 K
+Species = H+
+
+H + CRP --> H+ + e- Rate: +40%
+H + O+ --> H+ + O Rate: +37%
+H + H2+ --> H+ + H2 Rate: +13%
+H2 + He+ --> H+ + He + H Rate: +5%
+H + He+ --> H+ + He Rate: +2%
+H2+ + PHOTON --> H+ + H Rate: +2%
+CH+ + PHOTON --> H+ + C Rate: +1%
+
+H+ + O --> O+ + H Rate: -97%
+H+ + e- --> H + PHOTON Rate: -3%
+
+Total Abundance = 4.180E-07
+Formation Rate = 1.026E-17 s^-1
+Destruction Rate = 1.026E-17 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 571, t = 2.0E+6 yr, A_V = 9.9E-1 mag
+n_H = 1.0E+3 cm^-3, T_gas = 113.1 K
+Species = O+
+
+H+ + O --> O+ + H Rate:+100%
+
+O+ + H2 --> OH+ + H Rate: -62%
+O+ + H --> O + H+ Rate: -38%
+
+Total Abundance = 1.610E-11
+Formation Rate = 9.947E-18 s^-1
+Destruction Rate = 9.947E-18 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 571, t = 2.0E+6 yr, A_V = 9.9E-1 mag
+n_H = 1.0E+3 cm^-3, T_gas = 113.1 K
+Species = e-
+
+C + PHOTON --> e- + C+ Rate: +89%
+H + CRP --> e- + H+ Rate: +4%
+Mg + PHOTON --> e- + Mg+ Rate: +3%
+H2 + CRP --> e- + H2+ Rate: +3%
+He + CRP --> e- + He+ Rate: +1%
+
+e- + C+ --> C + PHOTON Rate: -83%
+e- + Mg+ --> Mg + PHOTON Rate: -3%
+e- + CH2+ --> C + H + H Rate: -2%
+e- + H3O+ --> OH + H + H Rate: -2%
+e- + H3O+ --> H2O + H Rate: -1%
+e- + H3+ --> H + H + H Rate: -1%
+e- + H2O+ --> O + H + H Rate: -1%
+e- + CH3+ --> CH2 + H Rate: -1%
+e- + H3O+ --> OH + H2 Rate: -1%
+e- + CH3+ --> C + H2 + H Rate: -1%
+e- + CH2+ --> CH + H Rate: -1%
+e- + CH2+ --> C + H2 Rate: -1%
+e- + H3+ --> H2 + H Rate: -1%
+e- + CH3+ --> CH + H + H Rate: -1%
+
+Total Abundance = 1.055E-04
+Formation Rate = 1.067E-16 s^-1
+Destruction Rate = 1.067E-16 s^-1
+
+================================================================================
+
+Particle = 661, t = 2.0E+6 yr, A_V = 9.9E+0 mag
+n_H = 1.0E+3 cm^-3, T_gas = 10.0 K
+Species = H
+
+H3+ + e- --> H + H + H Rate: +40%
+H2+ + H2 --> H + H3+ Rate: +23%
+H2 + CRP --> H + H Rate: +5%
+H3+ + e- --> H + H2 Rate: +4%
+H2 + H2O+ --> H + H3O+ Rate: +4%
+H3O+ + e- --> H + OH + H Rate: +4%
+H2 + OH+ --> H + H2O+ Rate: +3%
+H2 + CH2+ --> H + CH3+ Rate: +3%
+H2 + CH+ --> H + CH2+ Rate: +2%
+HCO+ + e- --> H + CO Rate: +2%
+O + OH --> H + O2 Rate: +1%
+H3O+ + e- --> H + H2O Rate: +1%
+CH3+ + e- --> H + CH2 Rate: +1%
+CH3+ + e- --> H + CH + H Rate: +1%
+CH3+ + e- --> H + C + H2 Rate: +1%
+C+ + H2O --> H + HCO+ Rate: +1%
+CH + O --> H + CO Rate: +1%
+C + OH --> H + CO Rate: +1%
+H+ + H2O --> H + H2O+ Rate: +1%
+H2 + CRP --> H + H+ + e- Rate: +1%
+
+H + H + --> H2 + Rate: -80%
+H + CH --> C + H2 Rate: -9%
+H + CH2 --> CH + H2 Rate: -9%
+H + CRP --> H+ + e- Rate: -1%
+H + H2+ --> H2 + H+ Rate: -1%
+
+Total Abundance = 1.056E-02
+Formation Rate = 3.032E-17 s^-1
+Destruction Rate = 8.163E-18 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 661, t = 2.0E+6 yr, A_V = 9.9E+0 mag
+n_H = 1.0E+3 cm^-3, T_gas = 10.0 K
+Species = H2
+
+H + H + --> H2 + Rate: +39%
+H3+ + e- --> H2 + H Rate: +16%
+H3+ + O --> H2 + OH+ Rate: +10%
+H + CH --> H2 + C Rate: +9%
+H + CH2 --> H2 + CH Rate: +8%
+H3+ + C --> H2 + CH+ Rate: +7%
+CH3+ + e- --> H2 + C + H Rate: +3%
+H3O+ + e- --> H2 + OH Rate: +2%
+CH3+ + e- --> H2 + CH Rate: +2%
+H3+ + CO --> H2 + HCO+ Rate: +1%
+H + H2+ --> H2 + H+ Rate: +1%
+CH2 + O --> H2 + CO Rate: +1%
+H3O+ + e- --> H2 + O + H Rate: +1%
+
+H2 + H2+ --> H3+ + H Rate: -36%
+H2 + CRP --> H2+ + e- Rate: -36%
+H2 + H2O+ --> H3O+ + H Rate: -6%
+H2 + OH+ --> H2O+ + H Rate: -5%
+H2 + CH2+ --> CH3+ + H Rate: -5%
+H2 + CRP --> H + H Rate: -4%
+H2 + CH+ --> CH2+ + H Rate: -3%
+H2 + C --> CH2 + PHOTON Rate: -2%
+H2 + C+ --> CH2+ + PHOTON Rate: -2%
+H2 + CRP --> H+ + e- + H Rate: -1%
+
+Total Abundance = 4.947E-01
+Formation Rate = 8.420E-18 s^-1
+Destruction Rate = 1.950E-17 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 661, t = 2.0E+6 yr, A_V = 9.9E+0 mag
+n_H = 1.0E+3 cm^-3, T_gas = 10.0 K
+Species = C
+
+C+ + Mg --> C + Mg+ Rate: +42%
+H + CH --> C + H2 Rate: +35%
+CH3+ + e- --> C + H2 + H Rate: +13%
+C+ + e- --> C + PHOTON Rate: +7%
+CH + PHOTON --> C + H Rate: +1%
+CH2+ + e- --> C + H + H Rate: +1%
+CH2+ + e- --> C + H2 Rate: +1%
+
+C + CRPHOT --> C+ + e- Rate: -43%
+C + H3+ --> CH+ + H2 Rate: -24%
+C + H2 --> CH2 + PHOTON Rate: -15%
+C + O2 --> CO + O Rate: -10%
+C + OH --> CO + H Rate: -7%
+C + H --> CH + PHOTON Rate: -1%
+
+Total Abundance = 8.114E-05
+Formation Rate = 2.176E-18 s^-1
+Destruction Rate = 2.635E-18 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 661, t = 2.0E+6 yr, A_V = 9.9E+0 mag
+n_H = 1.0E+3 cm^-3, T_gas = 10.0 K
+Species = CO
+
+HCO+ + e- --> CO + H Rate: +36%
+C + O2 --> CO + O Rate: +21%
+CH + O --> CO + H Rate: +14%
+C + OH --> CO + H Rate: +14%
+C+ + OH --> CO + H+ Rate: +6%
+C+ + O2 --> CO + O+ Rate: +4%
+CH2 + O --> CO + H + H Rate: +3%
+CH2 + O --> CO + H2 Rate: +2%
+
+CO + He --> O + C+ + He Rate: -85%
+CO + H3 --> HCO+ + H2 Rate: -15%
+
+Total Abundance = 1.796E-05
+Formation Rate = 1.273E-18 s^-1
+Destruction Rate = 8.090E-19 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 661, t = 2.0E+6 yr, A_V = 9.9E+0 mag
+n_H = 1.0E+3 cm^-3, T_gas = 10.0 K
+Species = H+
+
+H2 + CRP --> H+ + e- + H Rate: +39%
+H + CRP --> H+ + e- Rate: +22%
+C+ + OH --> H+ + CO Rate: +21%
+H + H2+ --> H+ + H2 Rate: +13%
+H2 + He+ --> H+ + He + H Rate: +4%
+He + H2O --> H+ + OH + He Rate: +1%
+
+H+ + H2O --> H2O+ + H Rate: -50%
+H+ + Mg --> Mg+ + H Rate: -28%
+H+ + OH --> OH+ + H Rate: -6%
+H+ + e- --> H + PHOTON Rate: -6%
+H+ + O2 --> O2+ + H Rate: -5%
+H+ + CH3 --> CH3+ + H Rate: -2%
+H+ + CH4 --> CH3+ + H2 Rate: -1%
+H+ + CH4 --> CH4+ + H Rate: -1%
+H+ + CH --> CH+ + H Rate: -1%
+
+Total Abundance = 9.044E-08
+Formation Rate = 3.466E-19 s^-1
+Destruction Rate = 3.494E-19 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 661, t = 2.0E+6 yr, A_V = 9.9E+0 mag
+n_H = 1.0E+3 cm^-3, T_gas = 10.0 K
+Species = O+
+
+C+ + O2 --> O+ + CO Rate: +75%
+O + CRP --> O+ + e- Rate: +17%
+He+ + OH --> O+ + He + H Rate: +4%
+He+ + O2 --> O+ + O + He Rate: +3%
+O + CO+ --> O+ + CO Rate: +1%
+
+O+ + H2 --> OH+ + H Rate:-100%
+
+Total Abundance = 8.149E-14
+Formation Rate = 6.888E-20 s^-1
+Destruction Rate = 6.888E-20 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 661, t = 2.0E+6 yr, A_V = 9.9E+0 mag
+n_H = 1.0E+3 cm^-3, T_gas = 10.0 K
+Species = e-
+
+H2 + CRP --> e- + H2+ Rate: +76%
+C + CRPHOT --> e- + C+ Rate: +13%
+He + CRP --> e- + He+ Rate: +9%
+H2 + CRP --> e- + H+ + H Rate: +1%
+H + CRP --> e- + H+ Rate: +1%
+
+e- + H3+ --> H + H + H Rate: -44%
+e- + H3+ --> H2 + H Rate: -15%
+e- + Mg+ --> Mg + PHOTON Rate: -11%
+e- + H3O+ --> OH + H + H Rate: -6%
+e- + HCO+ --> CO + H Rate: -5%
+e- + H3O+ --> H2O + H Rate: -4%
+e- + CH3+ --> CH2 + H Rate: -4%
+e- + CH3+ --> C + H2 + H Rate: -3%
+e- + H3O+ --> OH + H2 Rate: -2%
+e- + C+ --> C + PHOTON Rate: -2%
+e- + CH3+ --> CH + H + H Rate: -2%
+e- + CH3+ --> CH + H2 Rate: -1%
+e- + H+ --> H + PHOTON Rate: -1%
+
+Total Abundance = 4.965E-06
+Formation Rate = 9.127E-18 s^-1
+Destruction Rate = 9.146E-18 s^-1
+
+================================================================================
+
+Particle = 863, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = H
+
+H3+ + e- --> H + H + H Rate: +39%
+H2+ + H2 --> H + H3+ Rate: +23%
+H2 + CRP --> H + H Rate: +5%
+H3+ + e- --> H + H2 Rate: +4%
+H2 + H2O+ --> H + H3O+ Rate: +4%
+H3O+ + e- --> H + OH + H Rate: +4%
+H2 + OH+ --> H + H2O+ Rate: +3%
+H2 + CH2+ --> H + CH3+ Rate: +3%
+H2 + CH+ --> H + CH2+ Rate: +2%
+HCO+ + e- --> H + CO Rate: +2%
+O + OH --> H + O2 Rate: +2%
+CH3+ + e- --> H + CH2 Rate: +1%
+H3O+ + e- --> H + H2O Rate: +1%
+CH3+ + e- --> H + CH + H Rate: +1%
+CH3+ + e- --> H + C + H2 Rate: +1%
+C+ + H2O --> H + HCO+ Rate: +1%
+CH + O --> H + CO Rate: +1%
+H+ + H2O --> H + H2O+ Rate: +1%
+C + OH --> H + CO Rate: +1%
+H2 + CRP --> H + H+ + e- Rate: +1%
+
+H + H + --> H2 + Rate: -68%
+H + CH --> C + H2 Rate: -15%
+H + CH2 --> CH + H2 Rate: -14%
+H + CRP --> H+ + e- Rate: -1%
+H + OH --> H2O + PHOTON Rate: -1%
+H + H2+ --> H2 + H+ Rate: -1%
+
+Total Abundance = 7.007E-03
+Formation Rate = 3.048E-17 s^-1
+Destruction Rate = 4.747E-18 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 863, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = H2
+
+H + H + --> H2 + Rate: +24%
+H3+ + e- --> H2 + H Rate: +20%
+H3+ + O --> H2 + OH+ Rate: +13%
+H + CH --> H2 + C Rate: +11%
+H + CH2 --> H2 + CH Rate: +10%
+H3+ + C --> H2 + CH+ Rate: +9%
+CH3+ + e- --> H2 + C + H Rate: +4%
+H3O+ + e- --> H2 + OH Rate: +3%
+H3+ + CO --> H2 + HCO+ Rate: +2%
+CH3+ + e- --> H2 + CH Rate: +2%
+CH2 + O --> H2 + CO Rate: +1%
+H + H2+ --> H2 + H+ Rate: +1%
+
+H2 + H2+ --> H3+ + H Rate: -36%
+H2 + CRP --> H2+ + e- Rate: -36%
+H2 + H2O+ --> H3O+ + H Rate: -6%
+H2 + OH+ --> H2O+ + H Rate: -5%
+H2 + CH2+ --> CH3+ + H Rate: -5%
+H2 + CRP --> H + H Rate: -4%
+H2 + CH+ --> CH2+ + H Rate: -3%
+H2 + C --> CH2 + PHOTON Rate: -2%
+H2 + C+ --> CH2+ + PHOTON Rate: -2%
+H2 + CRP --> H+ + e- + H Rate: -1%
+
+Total Abundance = 4.965E-01
+Formation Rate = 6.710E-18 s^-1
+Destruction Rate = 1.962E-17 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 863, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = C
+
+C+ + Mg --> C + Mg+ Rate: +42%
+H + CH --> C + H2 Rate: +36%
+CH3+ + e- --> C + H2 + H Rate: +14%
+C+ + e- --> C + PHOTON Rate: +7%
+CH2+ + e- --> C + H + H Rate: +1%
+
+C + CRPHOT --> C+ + e- Rate: -43%
+C + H3+ --> CH+ + H2 Rate: -24%
+C + H2 --> CH2 + PHOTON Rate: -15%
+C + O2 --> CO + O Rate: -12%
+C + OH --> CO + H Rate: -6%
+
+Total Abundance = 7.817E-05
+Formation Rate = 2.016E-18 s^-1
+Destruction Rate = 2.574E-18 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 863, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = CO
+
+HCO+ + e- --> CO + H Rate: +35%
+C + O2 --> CO + O Rate: +22%
+CH + O --> CO + H Rate: +16%
+C + OH --> CO + H Rate: +10%
+C+ + O2 --> CO + O+ Rate: +5%
+C+ + OH --> CO + H+ Rate: +4%
+CH2 + O --> CO + H + H Rate: +4%
+CH2 + O --> CO + H2 Rate: +2%
+C + HC --> CO + CH+ Rate: +1%
+H + CO --> CO + H+ Rate: +1%
+
+CO + He --> O + C+ + He Rate: -83%
+CO + H3 --> HCO+ + H2 Rate: -17%
+
+Total Abundance = 2.083E-05
+Formation Rate = 1.392E-18 s^-1
+Destruction Rate = 8.348E-19 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 863, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = H+
+
+H2 + CRP --> H+ + e- + H Rate: +44%
+C+ + OH --> H+ + CO Rate: +19%
+H + CRP --> H+ + e- Rate: +17%
+H + H2+ --> H+ + H2 Rate: +10%
+H2 + He+ --> H+ + He + H Rate: +9%
+He + H2O --> H+ + OH + He Rate: +1%
+
+H+ + H2O --> H2O+ + H Rate: -53%
+H+ + Mg --> Mg+ + H Rate: -25%
+H+ + O2 --> O2+ + H Rate: -7%
+H+ + e- --> H + PHOTON Rate: -5%
+H+ + OH --> OH+ + H Rate: -5%
+H+ + CH3 --> CH3+ + H Rate: -2%
+H+ + CH4 --> CH3+ + H2 Rate: -1%
+H+ + CH4 --> CH4+ + H Rate: -1%
+H+ + CH --> CH+ + H Rate: -1%
+
+Total Abundance = 8.541E-08
+Formation Rate = 3.026E-19 s^-1
+Destruction Rate = 3.038E-19 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 863, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = O+
+
+C+ + O2 --> O+ + CO Rate: +81%
+O + CRP --> O+ + e- Rate: +14%
+He+ + O2 --> O+ + O + He Rate: +3%
+He+ + OH --> O+ + He + H Rate: +2%
+
+O+ + H2 --> OH+ + H Rate:-100%
+
+Total Abundance = 1.016E-13
+Formation Rate = 8.602E-20 s^-1
+Destruction Rate = 8.602E-20 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 863, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = e-
+
+H2 + CRP --> e- + H2+ Rate: +77%
+C + CRPHOT --> e- + C+ Rate: +12%
+He + CRP --> e- + He+ Rate: +9%
+H2 + CRP --> e- + H+ + H Rate: +1%
+H + CRP --> e- + H+ Rate: +1%
+
+e- + H3+ --> H + H + H Rate: -44%
+e- + H3+ --> H2 + H Rate: -15%
+e- + Mg+ --> Mg + PHOTON Rate: -10%
+e- + H3O+ --> OH + H + H Rate: -6%
+e- + HCO+ --> CO + H Rate: -5%
+e- + CH3+ --> CH2 + H Rate: -4%
+e- + H3O+ --> H2O + H Rate: -4%
+e- + CH3+ --> C + H2 + H Rate: -3%
+e- + H3O+ --> OH + H2 Rate: -2%
+e- + C+ --> C + PHOTON Rate: -2%
+e- + CH3+ --> CH + H + H Rate: -2%
+e- + CH3+ --> CH + H2 Rate: -1%
+e- + O2+ --> O + O Rate: -1%
+e- + H2O+ --> O + H + H Rate: -1%
+
+Total Abundance = 5.238E-06
+Formation Rate = 9.088E-18 s^-1
+Destruction Rate = 9.046E-18 s^-1
+
+================================================================================
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = H
+
+H3+ + e- --> H + H + H Rate: +39%
+H2+ + H2 --> H + H3+ Rate: +23%
+H2 + CRP --> H + H Rate: +5%
+H3+ + e- --> H + H2 Rate: +4%
+H2 + H2O+ --> H + H3O+ Rate: +4%
+H3O+ + e- --> H + OH + H Rate: +4%
+H2 + OH+ --> H + H2O+ Rate: +3%
+H2 + CH2+ --> H + CH3+ Rate: +3%
+H2 + CH+ --> H + CH2+ Rate: +2%
+HCO+ + e- --> H + CO Rate: +2%
+O + OH --> H + O2 Rate: +2%
+CH3+ + e- --> H + CH2 Rate: +1%
+H3O+ + e- --> H + H2O Rate: +1%
+CH3+ + e- --> H + CH + H Rate: +1%
+CH3+ + e- --> H + C + H2 Rate: +1%
+C+ + H2O --> H + HCO+ Rate: +1%
+CH + O --> H + CO Rate: +1%
+H+ + H2O --> H + H2O+ Rate: +1%
+C + OH --> H + CO Rate: +1%
+H2 + CRP --> H + H+ + e- Rate: +1%
+
+H + H + --> H2 + Rate: -68%
+H + CH --> C + H2 Rate: -15%
+H + CH2 --> CH + H2 Rate: -14%
+H + CRP --> H+ + e- Rate: -1%
+H + OH --> H2O + PHOTON Rate: -1%
+H + H2+ --> H2 + H+ Rate: -1%
+
+Total Abundance = 7.007E-03
+Formation Rate = 3.048E-17 s^-1
+Destruction Rate = 4.747E-18 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = H2
+
+H + H + --> H2 + Rate: +24%
+H3+ + e- --> H2 + H Rate: +20%
+H3+ + O --> H2 + OH+ Rate: +13%
+H + CH --> H2 + C Rate: +11%
+H + CH2 --> H2 + CH Rate: +10%
+H3+ + C --> H2 + CH+ Rate: +9%
+CH3+ + e- --> H2 + C + H Rate: +4%
+H3O+ + e- --> H2 + OH Rate: +3%
+H3+ + CO --> H2 + HCO+ Rate: +2%
+CH3+ + e- --> H2 + CH Rate: +2%
+CH2 + O --> H2 + CO Rate: +1%
+H + H2+ --> H2 + H+ Rate: +1%
+
+H2 + H2+ --> H3+ + H Rate: -36%
+H2 + CRP --> H2+ + e- Rate: -36%
+H2 + H2O+ --> H3O+ + H Rate: -6%
+H2 + OH+ --> H2O+ + H Rate: -5%
+H2 + CH2+ --> CH3+ + H Rate: -5%
+H2 + CRP --> H + H Rate: -4%
+H2 + CH+ --> CH2+ + H Rate: -3%
+H2 + C --> CH2 + PHOTON Rate: -2%
+H2 + C+ --> CH2+ + PHOTON Rate: -2%
+H2 + CRP --> H+ + e- + H Rate: -1%
+
+Total Abundance = 4.965E-01
+Formation Rate = 6.710E-18 s^-1
+Destruction Rate = 1.962E-17 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = C
+
+C+ + Mg --> C + Mg+ Rate: +42%
+H + CH --> C + H2 Rate: +36%
+CH3+ + e- --> C + H2 + H Rate: +14%
+C+ + e- --> C + PHOTON Rate: +7%
+CH2+ + e- --> C + H + H Rate: +1%
+
+C + CRPHOT --> C+ + e- Rate: -43%
+C + H3+ --> CH+ + H2 Rate: -24%
+C + H2 --> CH2 + PHOTON Rate: -15%
+C + O2 --> CO + O Rate: -12%
+C + OH --> CO + H Rate: -6%
+
+Total Abundance = 7.817E-05
+Formation Rate = 2.016E-18 s^-1
+Destruction Rate = 2.574E-18 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = CO
+
+HCO+ + e- --> CO + H Rate: +35%
+C + O2 --> CO + O Rate: +22%
+CH + O --> CO + H Rate: +16%
+C + OH --> CO + H Rate: +10%
+C+ + O2 --> CO + O+ Rate: +5%
+C+ + OH --> CO + H+ Rate: +4%
+CH2 + O --> CO + H + H Rate: +4%
+CH2 + O --> CO + H2 Rate: +2%
+C + HC --> CO + CH+ Rate: +1%
+H + CO --> CO + H+ Rate: +1%
+
+CO + He --> O + C+ + He Rate: -83%
+CO + H3 --> HCO+ + H2 Rate: -17%
+
+Total Abundance = 2.083E-05
+Formation Rate = 1.392E-18 s^-1
+Destruction Rate = 8.348E-19 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = H+
+
+H2 + CRP --> H+ + e- + H Rate: +44%
+C+ + OH --> H+ + CO Rate: +19%
+H + CRP --> H+ + e- Rate: +17%
+H + H2+ --> H+ + H2 Rate: +10%
+H2 + He+ --> H+ + He + H Rate: +9%
+He + H2O --> H+ + OH + He Rate: +1%
+
+H+ + H2O --> H2O+ + H Rate: -53%
+H+ + Mg --> Mg+ + H Rate: -25%
+H+ + O2 --> O2+ + H Rate: -7%
+H+ + e- --> H + PHOTON Rate: -5%
+H+ + OH --> OH+ + H Rate: -5%
+H+ + CH3 --> CH3+ + H Rate: -2%
+H+ + CH4 --> CH3+ + H2 Rate: -1%
+H+ + CH4 --> CH4+ + H Rate: -1%
+H+ + CH --> CH+ + H Rate: -1%
+
+Total Abundance = 8.541E-08
+Formation Rate = 3.026E-19 s^-1
+Destruction Rate = 3.038E-19 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = O+
+
+C+ + O2 --> O+ + CO Rate: +81%
+O + CRP --> O+ + e- Rate: +14%
+He+ + O2 --> O+ + O + He Rate: +3%
+He+ + OH --> O+ + He + H Rate: +2%
+
+O+ + H2 --> OH+ + H Rate:-100%
+
+Total Abundance = 1.016E-13
+Formation Rate = 8.602E-20 s^-1
+Destruction Rate = 8.602E-20 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = e-
+
+H2 + CRP --> e- + H2+ Rate: +77%
+C + CRPHOT --> e- + C+ Rate: +12%
+He + CRP --> e- + He+ Rate: +9%
+H2 + CRP --> e- + H+ + H Rate: +1%
+H + CRP --> e- + H+ Rate: +1%
+
+e- + H3+ --> H + H + H Rate: -44%
+e- + H3+ --> H2 + H Rate: -15%
+e- + Mg+ --> Mg + PHOTON Rate: -10%
+e- + H3O+ --> OH + H + H Rate: -6%
+e- + HCO+ --> CO + H Rate: -5%
+e- + CH3+ --> CH2 + H Rate: -4%
+e- + H3O+ --> H2O + H Rate: -4%
+e- + CH3+ --> C + H2 + H Rate: -3%
+e- + H3O+ --> OH + H2 Rate: -2%
+e- + C+ --> C + PHOTON Rate: -2%
+e- + CH3+ --> CH + H + H Rate: -2%
+e- + CH3+ --> CH + H2 Rate: -1%
+e- + O2+ --> O + O Rate: -1%
+e- + H2O+ --> O + H + H Rate: -1%
+
+Total Abundance = 5.238E-06
+Formation Rate = 9.088E-18 s^-1
+Destruction Rate = 9.046E-18 s^-1
+
+================================================================================
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = H
+
+H3+ + e- --> H + H + H Rate: +39%
+H2+ + H2 --> H + H3+ Rate: +23%
+H2 + CRP --> H + H Rate: +5%
+H3+ + e- --> H + H2 Rate: +4%
+H2 + H2O+ --> H + H3O+ Rate: +4%
+H3O+ + e- --> H + OH + H Rate: +4%
+H2 + OH+ --> H + H2O+ Rate: +3%
+H2 + CH2+ --> H + CH3+ Rate: +3%
+H2 + CH+ --> H + CH2+ Rate: +2%
+HCO+ + e- --> H + CO Rate: +2%
+O + OH --> H + O2 Rate: +2%
+CH3+ + e- --> H + CH2 Rate: +1%
+H3O+ + e- --> H + H2O Rate: +1%
+CH3+ + e- --> H + CH + H Rate: +1%
+CH3+ + e- --> H + C + H2 Rate: +1%
+C+ + H2O --> H + HCO+ Rate: +1%
+CH + O --> H + CO Rate: +1%
+H+ + H2O --> H + H2O+ Rate: +1%
+C + OH --> H + CO Rate: +1%
+H2 + CRP --> H + H+ + e- Rate: +1%
+
+H + H + --> H2 + Rate: -68%
+H + CH --> C + H2 Rate: -15%
+H + CH2 --> CH + H2 Rate: -14%
+H + CRP --> H+ + e- Rate: -1%
+H + OH --> H2O + PHOTON Rate: -1%
+H + H2+ --> H2 + H+ Rate: -1%
+
+Total Abundance = 7.007E-03
+Formation Rate = 3.048E-17 s^-1
+Destruction Rate = 4.747E-18 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = H2
+
+H + H + --> H2 + Rate: +24%
+H3+ + e- --> H2 + H Rate: +20%
+H3+ + O --> H2 + OH+ Rate: +13%
+H + CH --> H2 + C Rate: +11%
+H + CH2 --> H2 + CH Rate: +10%
+H3+ + C --> H2 + CH+ Rate: +9%
+CH3+ + e- --> H2 + C + H Rate: +4%
+H3O+ + e- --> H2 + OH Rate: +3%
+H3+ + CO --> H2 + HCO+ Rate: +2%
+CH3+ + e- --> H2 + CH Rate: +2%
+CH2 + O --> H2 + CO Rate: +1%
+H + H2+ --> H2 + H+ Rate: +1%
+
+H2 + H2+ --> H3+ + H Rate: -36%
+H2 + CRP --> H2+ + e- Rate: -36%
+H2 + H2O+ --> H3O+ + H Rate: -6%
+H2 + OH+ --> H2O+ + H Rate: -5%
+H2 + CH2+ --> CH3+ + H Rate: -5%
+H2 + CRP --> H + H Rate: -4%
+H2 + CH+ --> CH2+ + H Rate: -3%
+H2 + C --> CH2 + PHOTON Rate: -2%
+H2 + C+ --> CH2+ + PHOTON Rate: -2%
+H2 + CRP --> H+ + e- + H Rate: -1%
+
+Total Abundance = 4.965E-01
+Formation Rate = 6.710E-18 s^-1
+Destruction Rate = 1.962E-17 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = C
+
+C+ + Mg --> C + Mg+ Rate: +42%
+H + CH --> C + H2 Rate: +36%
+CH3+ + e- --> C + H2 + H Rate: +14%
+C+ + e- --> C + PHOTON Rate: +7%
+CH2+ + e- --> C + H + H Rate: +1%
+
+C + CRPHOT --> C+ + e- Rate: -43%
+C + H3+ --> CH+ + H2 Rate: -24%
+C + H2 --> CH2 + PHOTON Rate: -15%
+C + O2 --> CO + O Rate: -12%
+C + OH --> CO + H Rate: -6%
+
+Total Abundance = 7.817E-05
+Formation Rate = 2.016E-18 s^-1
+Destruction Rate = 2.574E-18 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = CO
+
+HCO+ + e- --> CO + H Rate: +35%
+C + O2 --> CO + O Rate: +22%
+CH + O --> CO + H Rate: +16%
+C + OH --> CO + H Rate: +10%
+C+ + O2 --> CO + O+ Rate: +5%
+C+ + OH --> CO + H+ Rate: +4%
+CH2 + O --> CO + H + H Rate: +4%
+CH2 + O --> CO + H2 Rate: +2%
+C + HC --> CO + CH+ Rate: +1%
+H + CO --> CO + H+ Rate: +1%
+
+CO + He --> O + C+ + He Rate: -83%
+CO + H3 --> HCO+ + H2 Rate: -17%
+
+Total Abundance = 2.083E-05
+Formation Rate = 1.392E-18 s^-1
+Destruction Rate = 8.348E-19 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = H+
+
+H2 + CRP --> H+ + e- + H Rate: +44%
+C+ + OH --> H+ + CO Rate: +19%
+H + CRP --> H+ + e- Rate: +17%
+H + H2+ --> H+ + H2 Rate: +10%
+H2 + He+ --> H+ + He + H Rate: +9%
+He + H2O --> H+ + OH + He Rate: +1%
+
+H+ + H2O --> H2O+ + H Rate: -53%
+H+ + Mg --> Mg+ + H Rate: -25%
+H+ + O2 --> O2+ + H Rate: -7%
+H+ + e- --> H + PHOTON Rate: -5%
+H+ + OH --> OH+ + H Rate: -5%
+H+ + CH3 --> CH3+ + H Rate: -2%
+H+ + CH4 --> CH3+ + H2 Rate: -1%
+H+ + CH4 --> CH4+ + H Rate: -1%
+H+ + CH --> CH+ + H Rate: -1%
+
+Total Abundance = 8.541E-08
+Formation Rate = 3.026E-19 s^-1
+Destruction Rate = 3.038E-19 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = O+
+
+C+ + O2 --> O+ + CO Rate: +81%
+O + CRP --> O+ + e- Rate: +14%
+He+ + O2 --> O+ + O + He Rate: +3%
+He+ + OH --> O+ + He + H Rate: +2%
+
+O+ + H2 --> OH+ + H Rate:-100%
+
+Total Abundance = 1.016E-13
+Formation Rate = 8.602E-20 s^-1
+Destruction Rate = 8.602E-20 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = e-
+
+H2 + CRP --> e- + H2+ Rate: +77%
+C + CRPHOT --> e- + C+ Rate: +12%
+He + CRP --> e- + He+ Rate: +9%
+H2 + CRP --> e- + H+ + H Rate: +1%
+H + CRP --> e- + H+ Rate: +1%
+
+e- + H3+ --> H + H + H Rate: -44%
+e- + H3+ --> H2 + H Rate: -15%
+e- + Mg+ --> Mg + PHOTON Rate: -10%
+e- + H3O+ --> OH + H + H Rate: -6%
+e- + HCO+ --> CO + H Rate: -5%
+e- + CH3+ --> CH2 + H Rate: -4%
+e- + H3O+ --> H2O + H Rate: -4%
+e- + CH3+ --> C + H2 + H Rate: -3%
+e- + H3O+ --> OH + H2 Rate: -2%
+e- + C+ --> C + PHOTON Rate: -2%
+e- + CH3+ --> CH + H + H Rate: -2%
+e- + CH3+ --> CH + H2 Rate: -1%
+e- + O2+ --> O + O Rate: -1%
+e- + H2O+ --> O + H + H Rate: -1%
+
+Total Abundance = 5.238E-06
+Formation Rate = 9.088E-18 s^-1
+Destruction Rate = 9.046E-18 s^-1
+
+================================================================================
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = H
+
+H3+ + e- --> H + H + H Rate: +39%
+H2+ + H2 --> H + H3+ Rate: +23%
+H2 + CRP --> H + H Rate: +5%
+H3+ + e- --> H + H2 Rate: +4%
+H2 + H2O+ --> H + H3O+ Rate: +4%
+H3O+ + e- --> H + OH + H Rate: +4%
+H2 + OH+ --> H + H2O+ Rate: +3%
+H2 + CH2+ --> H + CH3+ Rate: +3%
+H2 + CH+ --> H + CH2+ Rate: +2%
+HCO+ + e- --> H + CO Rate: +2%
+O + OH --> H + O2 Rate: +2%
+CH3+ + e- --> H + CH2 Rate: +1%
+H3O+ + e- --> H + H2O Rate: +1%
+CH3+ + e- --> H + CH + H Rate: +1%
+CH3+ + e- --> H + C + H2 Rate: +1%
+C+ + H2O --> H + HCO+ Rate: +1%
+CH + O --> H + CO Rate: +1%
+H+ + H2O --> H + H2O+ Rate: +1%
+C + OH --> H + CO Rate: +1%
+H2 + CRP --> H + H+ + e- Rate: +1%
+
+H + H + --> H2 + Rate: -68%
+H + CH --> C + H2 Rate: -15%
+H + CH2 --> CH + H2 Rate: -14%
+H + CRP --> H+ + e- Rate: -1%
+H + OH --> H2O + PHOTON Rate: -1%
+H + H2+ --> H2 + H+ Rate: -1%
+
+Total Abundance = 7.007E-03
+Formation Rate = 3.048E-17 s^-1
+Destruction Rate = 4.747E-18 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = H2
+
+H + H + --> H2 + Rate: +24%
+H3+ + e- --> H2 + H Rate: +20%
+H3+ + O --> H2 + OH+ Rate: +13%
+H + CH --> H2 + C Rate: +11%
+H + CH2 --> H2 + CH Rate: +10%
+H3+ + C --> H2 + CH+ Rate: +9%
+CH3+ + e- --> H2 + C + H Rate: +4%
+H3O+ + e- --> H2 + OH Rate: +3%
+H3+ + CO --> H2 + HCO+ Rate: +2%
+CH3+ + e- --> H2 + CH Rate: +2%
+CH2 + O --> H2 + CO Rate: +1%
+H + H2+ --> H2 + H+ Rate: +1%
+
+H2 + H2+ --> H3+ + H Rate: -36%
+H2 + CRP --> H2+ + e- Rate: -36%
+H2 + H2O+ --> H3O+ + H Rate: -6%
+H2 + OH+ --> H2O+ + H Rate: -5%
+H2 + CH2+ --> CH3+ + H Rate: -5%
+H2 + CRP --> H + H Rate: -4%
+H2 + CH+ --> CH2+ + H Rate: -3%
+H2 + C --> CH2 + PHOTON Rate: -2%
+H2 + C+ --> CH2+ + PHOTON Rate: -2%
+H2 + CRP --> H+ + e- + H Rate: -1%
+
+Total Abundance = 4.965E-01
+Formation Rate = 6.710E-18 s^-1
+Destruction Rate = 1.962E-17 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = C
+
+C+ + Mg --> C + Mg+ Rate: +42%
+H + CH --> C + H2 Rate: +36%
+CH3+ + e- --> C + H2 + H Rate: +14%
+C+ + e- --> C + PHOTON Rate: +7%
+CH2+ + e- --> C + H + H Rate: +1%
+
+C + CRPHOT --> C+ + e- Rate: -43%
+C + H3+ --> CH+ + H2 Rate: -24%
+C + H2 --> CH2 + PHOTON Rate: -15%
+C + O2 --> CO + O Rate: -12%
+C + OH --> CO + H Rate: -6%
+
+Total Abundance = 7.817E-05
+Formation Rate = 2.016E-18 s^-1
+Destruction Rate = 2.574E-18 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = CO
+
+HCO+ + e- --> CO + H Rate: +35%
+C + O2 --> CO + O Rate: +22%
+CH + O --> CO + H Rate: +16%
+C + OH --> CO + H Rate: +10%
+C+ + O2 --> CO + O+ Rate: +5%
+C+ + OH --> CO + H+ Rate: +4%
+CH2 + O --> CO + H + H Rate: +4%
+CH2 + O --> CO + H2 Rate: +2%
+C + HC --> CO + CH+ Rate: +1%
+H + CO --> CO + H+ Rate: +1%
+
+CO + He --> O + C+ + He Rate: -83%
+CO + H3 --> HCO+ + H2 Rate: -17%
+
+Total Abundance = 2.083E-05
+Formation Rate = 1.392E-18 s^-1
+Destruction Rate = 8.348E-19 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = H+
+
+H2 + CRP --> H+ + e- + H Rate: +44%
+C+ + OH --> H+ + CO Rate: +19%
+H + CRP --> H+ + e- Rate: +17%
+H + H2+ --> H+ + H2 Rate: +10%
+H2 + He+ --> H+ + He + H Rate: +9%
+He + H2O --> H+ + OH + He Rate: +1%
+
+H+ + H2O --> H2O+ + H Rate: -53%
+H+ + Mg --> Mg+ + H Rate: -25%
+H+ + O2 --> O2+ + H Rate: -7%
+H+ + e- --> H + PHOTON Rate: -5%
+H+ + OH --> OH+ + H Rate: -5%
+H+ + CH3 --> CH3+ + H Rate: -2%
+H+ + CH4 --> CH3+ + H2 Rate: -1%
+H+ + CH4 --> CH4+ + H Rate: -1%
+H+ + CH --> CH+ + H Rate: -1%
+
+Total Abundance = 8.541E-08
+Formation Rate = 3.026E-19 s^-1
+Destruction Rate = 3.038E-19 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = O+
+
+C+ + O2 --> O+ + CO Rate: +81%
+O + CRP --> O+ + e- Rate: +14%
+He+ + O2 --> O+ + O + He Rate: +3%
+He+ + OH --> O+ + He + H Rate: +2%
+
+O+ + H2 --> OH+ + H Rate:-100%
+
+Total Abundance = 1.016E-13
+Formation Rate = 8.602E-20 s^-1
+Destruction Rate = 8.602E-20 s^-1
+
+--------------------------------------------------------------------------------
+
+Particle = 1463, t = 2.0E+6 yr, A_V = 1.0E+2 mag
+n_H = 1.0E+3 cm^-3, T_gas = 13.0 K
+Species = e-
+
+H2 + CRP --> e- + H2+ Rate: +77%
+C + CRPHOT --> e- + C+ Rate: +12%
+He + CRP --> e- + He+ Rate: +9%
+H2 + CRP --> e- + H+ + H Rate: +1%
+H + CRP --> e- + H+ Rate: +1%
+
+e- + H3+ --> H + H + H Rate: -44%
+e- + H3+ --> H2 + H Rate: -15%
+e- + Mg+ --> Mg + PHOTON Rate: -10%
+e- + H3O+ --> OH + H + H Rate: -6%
+e- + HCO+ --> CO + H Rate: -5%
+e- + CH3+ --> CH2 + H Rate: -4%
+e- + H3O+ --> H2O + H Rate: -4%
+e- + CH3+ --> C + H2 + H Rate: -3%
+e- + H3O+ --> OH + H2 Rate: -2%
+e- + C+ --> C + PHOTON Rate: -2%
+e- + CH3+ --> CH + H + H Rate: -2%
+e- + CH3+ --> CH + H2 Rate: -1%
+e- + O2+ --> O + O Rate: -1%
+e- + H2O+ --> O + H + H Rate: -1%
+
+Total Abundance = 5.238E-06
+Formation Rate = 9.088E-18 s^-1
+Destruction Rate = 9.046E-18 s^-1
+
+================================================================================
+
