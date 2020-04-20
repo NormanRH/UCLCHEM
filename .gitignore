@@ -2,6 +2,7 @@
 output/
 *.dat
 *.png
+*.out
 
 #no compiled files
 *.pyc
