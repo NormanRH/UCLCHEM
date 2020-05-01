@@ -94,6 +94,13 @@ SUBROUTINE calculateReactionRates
         END SELECT
     END DO
 
+    !this catches the rates with a large negative gamma
+    where(rate(duplicates).gt.HUGE(rate(duplicates))) rate(duplicates)=0.0d0
+    !this multiplies rate by 0 or 1 depending on whether gastemp>mintemp of a reaction
+    rate(duplicates)=rate(duplicates)*min(real(floor(gasTemp(dstep)/minTemps)),1.0)
+    !and this multiplies by 0,1 if gastemp>max temp
+    rate(duplicates)=rate(duplicates)*min(real(floor(maxTemps/gasTemp(dstep))),1.0)
+
     !Photoreactions for which we have a more detailed treatment
     h2dis=H2PhotoDissRate(h2Col,radField,av(dstep),turbVel) !H2 photodissociation
     rate(nrco)=COPhotoDissRate(h2Col,coCol,radField,av(dstep)) !CO photodissociation

@@ -2,9 +2,9 @@ from plotting_functions import *
 
 base_path = 'Benchmarking/'
 
-for radfield in ["10_1e5.5","1e5_1e5.5","10_1e3","1e5_1e3","low_rad","high_cr"]:#"10_1e5.5","1e5_1e3","1e5_1e5.5","high_cr","low_rad_fixed","10_1e3",
+for radfield in ["fixed_heating"]:#"fixed_cooling","10_1e5.5","1e5_1e3","1e5_1e5.5","high_cr","low_rad_fixed","10_1e3",
 	#set file variables
-	path=base_path+radfield
+	path=base_path+radfield+"/Equilibrium"
 	pdr_heat_file=f"{path}/{radfield}.heat.out"
 	pdr_cool_file=f"{path}/{radfield}.cool.out"
 	pdr_abund_file=f"{path}/{radfield}.abun.out"
@@ -12,8 +12,8 @@ for radfield in ["10_1e5.5","1e5_1e5.5","10_1e3","1e5_1e3","low_rad","high_cr"]:
 
 	#load av at each particle so we can plot av on x axis.
 	particle,*junk,pdr_av_points=np.loadtxt(f"{path}/{radfield}.av.out",unpack=True,skiprows=1)
-	#uclchem_df=create_uclchem_df(path)
-	#uclchem_df.to_csv(f"{path}/uclchem_outputs.dat")
+	uclchem_df=create_uclchem_df(path,equilibrium=True)
+	uclchem_df.to_csv(f"{path}/uclchem_outputs.dat")
 	uclchem_df=pd.read_csv(f"{path}/uclchem_outputs.dat")
 
 	#single cooling plot

@@ -131,8 +131,7 @@ CONTAINS
         END IF
         !OPTIONS = SET_OPTS(METHOD_FLAG=22, ABSERR_VECTOR=abstol, RELERR=reltol,USER_SUPPLIED_JACOBIAN=.FALSE.)
         CALL initializeHeating(initialTemp,initialDens,abund(:,1),colDens(dstep),cloudSize)
-
-        if (columnFlag) write(11,333) specName(outIndx)
+        IF (columnFlag) write(11,333) specName(outIndx)
         333 format("Time,Density,gasTemp,dustTemp,av,",(999(A,:,',')))
         
     END SUBROUTINE initializeChemistry
@@ -232,7 +231,7 @@ CONTAINS
         IF ((writeCounter==writeStep .or. timeInYears .lt. 1000.0) .and. columnFlag) THEN
             writeCounter=1
             write(11,8030) timeInYears,density(dstep),gasTemp(dstep),dustTemp(dstep),av(dstep),abund(outIndx,dstep)
-            8030  format(1pe11.3,',',1pe11.4,',',0pf8.2,',',0pf8.2,',',1pe11.4,',',(999(1pe10.3,:,',')))
+            8030  format(1pe11.3,',',1pe11.4,',',0pf8.2,',',0pf8.2,',',1pe11.4,',',(999(1pe15.5,:,',')))
         ELSE
             writeCounter=writeCounter+1
         END IF
@@ -268,6 +267,7 @@ CONTAINS
 
         !1.d-30 stops numbers getting too small for fortran.
         WHERE(abund<1.0d-30) abund=1.0d-30
+
         density(dstep)=abund(NEQ,dstep)
         gasTemp(dstep)=abund(NEQ-1,dstep)
     END SUBROUTINE updateChemistry
@@ -279,8 +279,8 @@ CONTAINS
             ITASK=1 !try to integrate to targetTime
             ISTATE=1 !pretend every step is the first
             reltol=1e-4 !relative tolerance effectively sets decimal place accuracy
-            abstol=1.0d-14!*abund(:,dstep) !absolute tolerances depend on value of abundance
-            WHERE(abstol<1d-30) abstol=1d-30 ! to a minimum degree
+            abstol=1.0d-14*abund(:,dstep) !absolute tolerances depend on value of abundance
+            WHERE(abstol<1d-20) abstol=1d-20 ! to a minimum degree
 
             !get reaction rates for this iteration - do it here since we may reloop a few times
             !First get dust temperature - requires local and surface field in Habing
@@ -292,10 +292,10 @@ CONTAINS
             CALL calculateReactionRates
 
             !Tempdot is only recalculated after change in temperature of 1 degree so we force a calculation here
-            tempDot=getTempDot(abund(NEQ-1,dstep),abund(NEQ,dstep),radfield*EXP(-UV_FAC*av(dstep)),abund(:,dstep),h2dis,h2form,zeta,rate(nR_C_hv),&
+            IF (heatingFlag) tempDot=getTempDot(abund(NEQ-1,dstep),abund(NEQ,dstep),radfield*EXP(-UV_FAC*av(dstep)),abund(:,dstep),h2dis,h2form,zeta,rate(nR_C_hv),&
                 &1.0/GAS_DUST_DENSITY_RATIO,abund(exoReactants1,dstep),abund(exoReactants2,dstep),RATE(exoReacIdxs),exothermicities,.True.,&
                 &dustTemp(dstep),turbVel)
-            
+
             !Call the integrator.
             OPTIONS = SET_OPTS(METHOD_FLAG=22, ABSERR_VECTOR=abstol, RELERR=reltol,USER_SUPPLIED_JACOBIAN=.FALSE.,MXSTEP=MXSTEP)
             CALL DVODE_F90(F,NEQ,abund(:,dstep),currentTime,targetTime,ITASK,ISTATE,OPTIONS)
@@ -323,7 +323,7 @@ CONTAINS
                     ISTATE=1
                 CASE(-5)
                     write(*,*) "ISTATE -5"
-                    targetTime=currentTime*1.001
+                    write(*,*) gasTemp(dstep),currentTime/SECONDS_PER_YEAR
                     ISTATE=1
             END SELECT
         END DO        

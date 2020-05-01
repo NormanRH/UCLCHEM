@@ -77,7 +77,6 @@ FUNCTION cIonizationRate(alpha,gamma,gasTemp,NC,NH2,av,radfield) RESULT(RATE)
    TAUC=gamma*av+1.1D-17*NC+(0.9D0*gasTemp**0.27D0*(NH2/1.59D21)**0.45D0)
 !  Calculate the CI photoionization rate
    RATE=alpha*(radfield/1.7)*EXP(-TAUC)
-   write(79,*) av,nh2,nc
    RETURN
 END FUNCTION cIonizationRate
  

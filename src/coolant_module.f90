@@ -265,6 +265,7 @@ CONTAINS
              coolants(N)%density=abundances(coolantIndices(N))*gasDensity*fraction
          ELSE
              coolants(N)%density=abundances(coolantIndices(N))*gasDensity
+             !write(*,*) coolantNames(N),abundances(coolantIndices(N))
          END IF
       END DO
 
@@ -302,7 +303,7 @@ CONTAINS
       !WRITE(*,*) "LTE"
       !WRITE(*,*) population
       DO ILEVEL=1,NLEVEL
-         IF (isnan(population(ilevel))) write(*,*) ilevel,PARTITION_FUNCTION,density
+         IF (isnan(population(ilevel))) write(*,*) ilevel,PARTITION_FUNCTION,density,temperature
       END DO
    !  Check that the sum of the level populations matches the total density to within 0.1%
       IF(ABS(DENSITY-SUM(POPULATION))/DENSITY.GT.1.0D-3) THEN
@@ -442,9 +443,9 @@ END SUBROUTINE CALCULATE_LAMBDA_OPERATOR
 !  elimination to determine the population densities of all N levels.
 !
 !-----------------------------------------------------------------------
-SUBROUTINE CALCULATE_LEVEL_POPULATIONS(COOLANT,GasTemperature,gasDensity,abundances)
+SUBROUTINE CALCULATE_LEVEL_POPULATIONS(COOLANT,GasTemperature,gasDensity,abundances,dustTemp)
    IMPLICIT NONE
-   REAL(dp), INTENT(IN) :: gasDensity,gasTemperature,abundances(:)
+   REAL(dp), INTENT(IN) :: gasDensity,gasTemperature,abundances(:),dustTemp
    TYPE(COOLANT_TYPE),  INTENT(INOUT)    :: COOLANT
    INTEGER:: I,J,N
    REAL(dp)     :: SUM
@@ -454,15 +455,15 @@ SUBROUTINE CALCULATE_LEVEL_POPULATIONS(COOLANT,GasTemperature,gasDensity,abundan
    ALLOCATE(R(1:COOLANT%NLEVEL,1:COOLANT%NLEVEL))
    ALLOCATE(A(1:COOLANT%NLEVEL,1:COOLANT%NLEVEL))
    ALLOCATE(B(1:COOLANT%NLEVEL))
-   A=0.0D0
-   B=0.0D0
-   R=0.0D0
+   ! A=0.0D0
+   ! B=0.0D0
+   ! R=0.0D0
    ! write(*,*) "temp",gasTemperature
    ! write(*,*) "pop",coolant%population
 
 !  Construct the matrix of transition rates R_ij (s^-1)
    CALL CONSTRUCT_TRANSITION_MATRIX(COOLANT,R,gasTemperature,gasDensity&
-      &,abundances)
+      &,abundances,dustTemp)
 
 
 !  Fill the coefficient matrix A and the right-hand-side vector b
@@ -622,19 +623,19 @@ END SUBROUTINE GAUSS_JORDAN
 !  using the escape probability formalism to determine the local field.
 !
 !-----------------------------------------------------------------------
-SUBROUTINE CONSTRUCT_TRANSITION_MATRIX(COOLANT,TRANSITION_MATRIX,GasTemperature,gasDensity,abundances)
+SUBROUTINE CONSTRUCT_TRANSITION_MATRIX(COOLANT,TRANSITION_MATRIX,GasTemperature,gasDensity,abundances,dustTemp)
    IMPLICIT NONE
    TYPE(COOLANT_TYPE), INTENT(INOUT)    :: COOLANT
-   REAL(dp), INTENT(IN)    :: GasTemperature,gasDensity,abundances(:)
+   REAL(dp), INTENT(IN)    :: GasTemperature,gasDensity,abundances(:),dustTemp
    REAL(dp), INTENT(OUT)   :: TRANSITION_MATRIX(:,:)
 
    INTEGER :: I,J,K
-   REAL(dp) :: TPOP,RHO_GRAIN,DUST_EMISSIVITY
+   REAL(dp) :: TPOP,dustEmissivity
    REAL(dp) :: S_ij,B_ij,B_ij_CMB,B_ij_DUST,BETA_ij
    REAL(dp), ALLOCATABLE :: RADIATION_FIELD(:,:)
    REAL(dp), ALLOCATABLE :: COLLISIONAL_RATE(:,:)
 
-   REAL(dp) :: S_ij_PREVIOUS,LAMBDA_ij
+   REAL(dp) :: S_ij_PREVIOUS,LAMBDA_ij,rhoGrain,dustDensity
 
 !  Allocate and initialize the mean integrated radiation field
    ALLOCATE(RADIATION_FIELD(1:COOLANT%NLEVEL,1:COOLANT%NLEVEL))
@@ -652,11 +653,12 @@ SUBROUTINE CONSTRUCT_TRANSITION_MATRIX(COOLANT,TRANSITION_MATRIX,GasTemperature,
          IF(COOLANT%FREQUENCY(I,J).LT.1.0D15) THEN
             B_ij_CMB=(2*HP*COOLANT%FREQUENCY(I,J)**3)/(C**2)/(EXP(HP*COOLANT%FREQUENCY(I,J)/(K_BOLTZ*T_CMB))-1.0D0)
 !#ifdef DUST
-!            RHO_GRAIN=2.0D0 ! Grain mass density (g cm^-3)
-!            DUST_EMISSIVITY=(RHO_GRAIN*DUST_DENSITY)*(0.01*(1.3*COOLANT%FREQUENCY(I,J)/3.0D11))
-!            B_ij_DUST=(2*HP*COOLANT%FREQUENCY(I,J)**3)/(C**2)/(EXP(HP*COOLANT%FREQUENCY(I,J)/(KB*DUST_TEMPERATURE))-1.D0)*DUST_EMISSIVITY
+           rhoGrain=2.0D0 ! Grain mass density (g cm^-3)
+           dustDensity=1.0d-12*gasDensity
+           dustEmissivity=(rhoGrain*dustDensity)*(0.01*(1.3*COOLANT%FREQUENCY(I,J)/3.0D11))
+           B_ij_DUST=(2*HP*COOLANT%FREQUENCY(I,J)**3)/(C**2)/(EXP(HP*COOLANT%FREQUENCY(I,J)/(K_BOLTZ*dustTemp))-1.D0)*dustEmissivity
 !#else
-            B_ij_DUST=0.0D0
+ !           B_ij_DUST=0.0D0
 !#endif
             B_ij=B_ij_CMB+B_ij_DUST
          ELSE
@@ -691,46 +693,26 @@ SUBROUTINE CONSTRUCT_TRANSITION_MATRIX(COOLANT,TRANSITION_MATRIX,GasTemperature,
             COOLANT%EMISSIVITY(I,J)=COOLANT%POPULATION(I)*COOLANT%A_COEFF(I,J) &
                                              & *HP*COOLANT%FREQUENCY(I,J)*BETA_ij*(S_ij-B_ij)/S_ij
          END IF
+!        Calculate the mean integrated radiation field <J_ij>
+         RADIATION_FIELD(I,J)=(1.0D0-BETA_ij)*S_ij+BETA_ij*B_ij
 
-! !        Calculate the mean integrated radiation field <J_ij>
-!          RADIATION_FIELD(I,J)=(1.0D0-BETA_ij)*S_ij+BETA_ij*B_ij
-!          RADIATION_FIELD(J,I)=RADIATION_FIELD(I,J)
-!          if (isnan(RADIATION_FIELD(I,J))) THEN
-!             WRITE(*,*) "beta_ij", BETA_ij
-!             write(*,*) "s_ij",S_ij
-!             write(*,*) "b_ij",B_ij
-!             write(*,*) "freq",COOLANT%FREQUENCY(I,J)
-!             write(*,*) "pop j" ,COOLANT%POPULATION(J)
-!             write(*,*) "weight i",COOLANT%WEIGHT(I)
-!             write(*,*) "pop i",COOLANT%POPULATION(I)
-!             write(*,*) "weight j",COOLANT%WEIGHT(J)
-!          END IF
 !        Lambda operator keeps breaking so lets not use ALI for now
 ! !        Calculate the source function in the same manner for
 ! !        the populations determined on the previous iteration
-         IF(COOLANT%PREVIOUS_POPULATION(I).lt.1.d-20) THEN
-            S_ij_PREVIOUS=0.0D0
-         ELSE IF(ABS(COOLANT%PREVIOUS_POPULATION(I)*COOLANT%WEIGHT(J)-COOLANT%PREVIOUS_POPULATION(J)*COOLANT%WEIGHT(I)).EQ.0) THEN
-            S_ij_PREVIOUS=HP*COOLANT%FREQUENCY(I,J)*COOLANT%PREVIOUS_POPULATION(I)*COOLANT%A_COEFF(I,J)/(4.0*PI)
-         ELSE
-            S_ij_PREVIOUS=(2*HP*COOLANT%FREQUENCY(I,J)**3)/(C**2) &
-              & /((COOLANT%PREVIOUS_POPULATION(J)*COOLANT%WEIGHT(I)) &
-              &  /(COOLANT%PREVIOUS_POPULATION(I)*COOLANT%WEIGHT(J))-1.0D0)
-         END IF
+!          IF(COOLANT%PREVIOUS_POPULATION(I).lt.1.d-20) THEN
+!             S_ij_PREVIOUS=0.0D0
+!          ELSE IF(ABS(COOLANT%PREVIOUS_POPULATION(I)*COOLANT%WEIGHT(J)-COOLANT%PREVIOUS_POPULATION(J)*COOLANT%WEIGHT(I)).EQ.0) THEN
+!             S_ij_PREVIOUS=HP*COOLANT%FREQUENCY(I,J)*COOLANT%PREVIOUS_POPULATION(I)*COOLANT%A_COEFF(I,J)/(4.0*PI)
+!          ELSE
+!             S_ij_PREVIOUS=(2*HP*COOLANT%FREQUENCY(I,J)**3)/(C**2) &
+!               & /((COOLANT%PREVIOUS_POPULATION(J)*COOLANT%WEIGHT(I)) &
+!               &  /(COOLANT%PREVIOUS_POPULATION(I)*COOLANT%WEIGHT(J))-1.0D0)
+!          END IF
 
-!        Use the Accelerated Lambda Iteration method to speed up convergence
-!        by amplifying the incremental difference of the new source function
-         LAMBDA_ij=COOLANT%LAMBDA(I,J)
-         RADIATION_FIELD(I,J)=(1.0D0-BETA_ij)*(LAMBDA_ij*S_ij+(1.0D0-LAMBDA_ij)*S_ij_PREVIOUS)+BETA_ij*B_ij
-         ! if (isnan(RADIATION_FIELD(I,J))) THEN
-         !    WRITE(*,*) "beta",BETA_ij
-         !    WRITE(*,*) "lambda",LAMBDA_ij
-         !    WRITE(*,*) "source and prev",S_ij,S_ij_PREVIOUS
-         !    WRITE(*,*) "B",B_ij
-         !    WRITE(*,*) "opacity",COOLANT%OPACITY(I,J)
-         !    write(*,*) "pop i",COOLANT%POPULATION(I)
-
-         ! END IF
+! !        Use the Accelerated Lambda Iteration method to speed up convergence
+! !        by amplifying the incremental difference of the new source function
+!          LAMBDA_ij=COOLANT%LAMBDA(I,J)
+!          RADIATION_FIELD(I,J)=(1.0D0-BETA_ij)*(LAMBDA_ij*S_ij+(1.0D0-LAMBDA_ij)*S_ij_PREVIOUS)+BETA_ij*B_ij
 
          RADIATION_FIELD(J,I)=RADIATION_FIELD(I,J)
       END DO ! End of loop over levels (j)
@@ -905,7 +887,7 @@ END SUBROUTINE CALCULATE_COLLISIONAL_RATES
 LOGICAL FUNCTION CHECK_CONVERGENCE()
    INTEGER :: I,N
    REAL(dp) :: RELATIVE_CHANGE
-   REAL(dp), PARAMETER :: POPULATION_LIMIT=1.0D-14,POPULATION_CONVERGENCE_CRITERION=0.1
+   REAL(dp), PARAMETER :: POPULATION_LIMIT=1.0D-14,POPULATION_CONVERGENCE_CRITERION=1.0d-2
    LOGICAL :: convergence(NCOOL)
 
       DO N=1,NCOOL ! Loop over coolants
@@ -1019,8 +1001,149 @@ FUNCTION ESCAPE_PROBABILITY(TAU) RESULT(BETA)
 !  subtends a solid angle of 2π sr, since the photons escape through the
 !  hemisphere in the outward direction, so its escape probability should
 !  be divided by two.
-   BETA=0.5*BETA
+   !BETA=0.5*BETA
    RETURN
 END FUNCTION ESCAPE_PROBABILITY
 
+SUBROUTINE writePopulations(fileName,modelNumber)
+   CHARACTER(*), INTENT(IN) :: fileName, modelNumber
+   CHARACTER(LEN=11), ALLOCATABLE :: populationLabels(:)
+   INTEGER :: i,n,p
+   ALLOCATE(populationLabels(1:SUM((/(coolants(N)%nLevel,N=1,NCOOL)/))))
+   p=1
+   DO n=1,nCool
+      DO I=1,coolants(n)%nLevel
+         WRITE(populationLabels(p),"(I3)") I-1
+         populationLabels(p)='n('//TRIM(ADJUSTL(coolants(N)%NAME))//','//&
+                                 &TRIM(ADJUSTL(populationLabels(p)))//')'
+          p=p+1
+      END DO
+   END Do
+   OPEN(53,file=fileName,status='unknown')
+   WRITE(53,"(A5,999(':',A11))") "MODEL",populationLabels
+   WRITE(53,"(A2,999(':',E13.5))") modelNumber,(coolants(N)%POPULATION,N=1,NCOOL)
+   CLOSE(53)
+END SUBROUTINE writePopulations
+
+
+SUBROUTINE writeOpacities(fileName,modelNumber)
+   IMPLICIT NONE
+   CHARACTER(*), INTENT(IN) :: fileName, modelNumber
+
+   CHARACTER(LEN=11), ALLOCATABLE :: LINE_LABELS(:)
+
+   INTEGER  :: I,J,N,P
+
+!  Create the transition label for each emission line
+   ALLOCATE(LINE_LABELS(1:COUNT((/(coolants(N)%A_COEFF,N=1,NCOOL)/).GT.0)))
+   P=1
+   DO N=1,NCOOL ! Loop over coolants
+      DO I=1,coolants(N)%NLEVEL ! Loop over levels (i)
+         DO J=1,coolants(N)%NLEVEL ! Loop over levels (j)
+            IF(coolants(N)%A_COEFF(I,J).EQ.0) CYCLE
+
+!           Assume all coolants with < 6 levels are atoms with fine-structure lines
+            IF(coolants(N)%NLEVEL.LT.6) THEN
+
+!              Label fine-structure lines with their wavelength in micron (or in Angstrom, if appropriate)
+               IF(coolants(N)%FREQUENCY(I,J).GE.3.0D14) THEN
+                  WRITE(LINE_LABELS(P),"(I4)") NINT(C/coolants(N)%FREQUENCY(I,J)*1.0D8) ! Wavelength in Angstrom (nearest int)
+                  LINE_LABELS(P)=TRIM(ADJUSTL(LINE_LABELS(P)))//'A'
+               ELSE IF(coolants(N)%FREQUENCY(I,J).GE.3.0D13) THEN
+                  WRITE(LINE_LABELS(P),"(F5.2)") C/coolants(N)%FREQUENCY(I,J)*1.0D4 ! Wavelength in micron (2 dp accuracy)
+                  LINE_LABELS(P)=TRIM(ADJUSTL(LINE_LABELS(P)))//'um'
+               ELSE IF(coolants(N)%FREQUENCY(I,J).GE.1.0D13) THEN
+                  WRITE(LINE_LABELS(P),"(F5.1)") C/coolants(N)%FREQUENCY(I,J)*1.0D4 ! Wavelength in micron (1 dp accuracy)
+                  LINE_LABELS(P)=TRIM(ADJUSTL(LINE_LABELS(P)))//'um'
+               ELSE
+                  WRITE(LINE_LABELS(P),"(I4)") NINT(C/coolants(N)%FREQUENCY(I,J)*1.0D4) ! Wavelength in micron (nearest int)
+                  LINE_LABELS(P)=TRIM(ADJUSTL(LINE_LABELS(P)))//'um'
+               END IF
+
+!              Handle labelling of both neutral and ionized atomic species
+               LINE_LABELS(P)='['//coolants(N)%NAME(1:VERIFY(coolants(N)%NAME,'+ ',.TRUE.))  &
+                               & //REPEAT('I',COUNT_SUBSTRING(coolants(N)%NAME,'+'))//'I] ' &
+                               & //TRIM(ADJUSTL(LINE_LABELS(P)))
+
+!           Assume all coolants with more levels are molecules with pure rotational or ro-vibrational lines
+            ELSE
+
+!              If the line frequency corresponds to a wavelength in the micron range
+!              or shorter, then label the line with its wavelength in micron instead
+               IF(coolants(N)%FREQUENCY(I,J).GE.3.0D14) THEN
+                  WRITE(LINE_LABELS(P),"(I4)") NINT(C/coolants(N)%FREQUENCY(I,J)*1.0D8) ! Wavelength in Angstrom (nearest int)
+                  LINE_LABELS(P)=TRIM(ADJUSTL(coolants(N)%NAME))//' '//TRIM(ADJUSTL(LINE_LABELS(P)))//'A'
+               ELSE IF(coolants(N)%FREQUENCY(I,J).GE.3.0D13) THEN
+                  WRITE(LINE_LABELS(P),"(F5.2)") C/coolants(N)%FREQUENCY(I,J)*1.0D4 ! Wavelength in micron (2 dp accuracy)
+                  LINE_LABELS(P)=TRIM(ADJUSTL(coolants(N)%NAME))//' '//TRIM(ADJUSTL(LINE_LABELS(P)))//'um'
+               ELSE IF(coolants(N)%FREQUENCY(I,J).GE.1.0D13) THEN
+                  WRITE(LINE_LABELS(P),"(F5.1)") C/coolants(N)%FREQUENCY(I,J)*1.0D4 ! Wavelength in micron (1 dp accuracy)
+                  LINE_LABELS(P)=TRIM(ADJUSTL(coolants(N)%NAME))//' '//TRIM(ADJUSTL(LINE_LABELS(P)))//'um'
+               ELSE IF(coolants(N)%FREQUENCY(I,J).GE.6.0D12) THEN
+                  WRITE(LINE_LABELS(P),"(I4)") NINT(C/coolants(N)%FREQUENCY(I,J)*1.0D4) ! Wavelength in micron (nearest int)
+                  LINE_LABELS(P)=TRIM(ADJUSTL(coolants(N)%NAME))//' '//TRIM(ADJUSTL(LINE_LABELS(P)))//'um'
+               ELSE
+                  IF(J.GT.100) THEN
+                     WRITE(LINE_LABELS(P),"(I4,'-',I3)") I-1,J-1
+                  ELSE IF(J.GT.10) THEN
+                     WRITE(LINE_LABELS(P),"(I4,'-',I2)") I-1,J-1
+                  ELSE
+                     WRITE(LINE_LABELS(P),"(I4,'-',I1)") I-1,J-1
+                  END IF
+                  LINE_LABELS(P)=TRIM(ADJUSTL(coolants(N)%NAME))//'(' &
+                               & //TRIM(ADJUSTL(LINE_LABELS(P)))//')'
+                  LINE_LABELS(P)=REPEAT(' ',(LEN(LINE_LABELS(P))-LEN_TRIM(LINE_LABELS(P)))/2) &
+                               & //TRIM(ADJUSTL(LINE_LABELS(P)))
+               END IF
+
+            END IF
+            P=P+1
+         END DO ! End of loop over levels (j)
+      END DO ! End of loop over levels (i)
+   END DO ! End of loop over coolants
+
+!  Open and write to the output file
+   OPEN(UNIT=53,FILE=fileName,STATUS='REPLACE')
+   WRITE(53,"('Particle',999(2X,A11))") LINE_LABELS
+   DO N=1,NCOOL
+      DO I=1,coolants(N)%NLEVEL
+         DO J=1,coolants(N)%NLEVEL
+            IF(coolants(N)%A_COEFF(I,J).EQ.0) CYCLE
+            WRITE(53,"(999ES13.5)",ADVANCE='NO') coolants(N)%OPACITY(I,J)
+         END DO
+      END DO
+   END DO
+   CLOSE(53)
+
+   DEALLOCATE(LINE_LABELS)
+
+   RETURN
+END SUBROUTINE writeOpacities
+
+!=======================================================================
+!
+!  Return the number of non-overlapping occurrences
+!  of a given substring within the specified string.
+!
+!-----------------------------------------------------------------------
+FUNCTION COUNT_SUBSTRING(STRING,SUBSTRING) RESULT(COUNT)
+
+   IMPLICIT NONE
+
+   CHARACTER(LEN=*), INTENT(IN) :: STRING,SUBSTRING
+   INTEGER :: I,COUNT,POSITION
+
+   COUNT=0
+   IF(LEN(SUBSTRING).EQ.0) RETURN
+
+   I=1
+   DO 
+      POSITION=INDEX(STRING(I:),SUBSTRING)
+      IF(POSITION.EQ.0) RETURN
+      COUNT=COUNT+1
+      I=I+POSITION+LEN(SUBSTRING)
+   END DO
+
+END FUNCTION COUNT_SUBSTRING
 END MODULE COOLANT_MODULE
+

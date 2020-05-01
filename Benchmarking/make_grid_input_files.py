@@ -23,7 +23,7 @@ cloud_files={"square":"cloud-square.dat",
 
 
 
-for cloud_type in ["fixed_cooling"]:#10_1e3","10_1e5.5","1e5_1e3","1e5_1e5.5","low_rad_fixed","high_cr"
+for cloud_type in ["square"]:#10_1e3","10_1e5.5","1e5_1e3","1e5_1e5.5","low_rad_fixed","high_cr"
 	#load up density for each particle
 	particle_df=pd.read_csv(f"Benchmarking/{cloud_type}/{cloud_type}.prop.out")[["Particle","T_gas","n_H"]]
 	print(len(particle_df))

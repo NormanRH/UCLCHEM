@@ -12,7 +12,8 @@ import os
 
 
 reactionFile = 'inputFiles/umist12-uclpdredit.csv'
-reactionFile_grain = 'inputFiles/uclgrainbasic.csv'
+#reactionFile_grain = 'inputFiles/uclgrainbasic.csv'
+reactionFile_grain = 'inputFiles/uclpdr-network.csv'
 exotherm_file='inputFiles/reaction_energy.csv'
 speciesFile = 'inputFiles/uclpdrspecies.csv'
 
@@ -37,7 +38,8 @@ speciesList=remove_duplicate_species(speciesList)
 nReactions1, reactions1, dropped_reactions = read_reaction_file(reactionFile, speciesList,'UMIST')
 nReactions2, reactions2, dropped_reactions = read_reaction_file(reactionFile_grain,speciesList,'UCL')
 nExotherms, exotherm_reacs,dropped_reactions = read_reaction_file(exotherm_file,speciesList,'UCL')
-reactionList=reactions1+reactions2
+#reactionList=reactions1+reactions2
+reactionList=reactions2
 reactionList=add_desorb_reactions(speciesList,reactionList)
 
 #Keep only the species that are involved in the final reaction list

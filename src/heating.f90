@@ -7,9 +7,7 @@ MODULE heating
     USE CONSTANTS
 IMPLICIT NONE
 
-
-
-CONTAINS
+ CONTAINS
 
     SUBROUTINE initializeHeating(gasTemperature, gasDensity,abundances,columnDensity,cloudSize)
         REAL(dp), INTENT(in) :: gasTemperature,gasDensity,columnDensity,cloudSize
@@ -29,6 +27,7 @@ CONTAINS
         CLOUD_COLUMN=columnDensity
         CLOUD_DENSITY=gasDensity
         cloud_size=cloudSize
+
         write(15,*) "Lyman-alpha C+ O C CO p-H2 o-H2 "
         write(16,*) "Photoelectric H2Formation FUVPumping Photodissociation Cionization CRheating turbHeating Chemheating gasGrainColls"
 
@@ -56,13 +55,18 @@ CONTAINS
             &,exoReactants1,exoReactants2,exoRates,exothermicities,dustTemp,turbVel)
         !write(*,*) "Total Heating", heating
 
-        ! IF (gasTemperature .gt. 10.0) THEN
+        IF (gasTemperature .gt. 10.0) THEN
+            cooling=getCoolingRate(gasTemperature,gasDensity,dustTemp,abundances,h2dis,turbVel,writeFlag)
+        ELSE
+            Cooling=0.0
+        END IF
+        ! IF (gasTemperature .gt. 800.0) THEN
+        !     cooling=getCoolingRate(gasTemperature,gasDensity,abundances,h2dis,turbVel,writeFlag)
+        ! ELSE IF (gasTemperature .lt. 600) THEN
         !     cooling=getCoolingRate(gasTemperature,gasDensity,abundances,h2dis,turbVel,writeFlag)
         ! ELSE
-        !     Cooling=0.0
+        !     cooling=1.0d-16
         ! END IF
-        cooling=1.0d-16
-        !write(*,*) "Total Cooling", Cooling
 
         getTempDot=heating-cooling
         !write(*,*) "Temp Dot",getTempDot
@@ -72,51 +76,168 @@ CONTAINS
 
     END FUNCTION getTempDot
 
+    REAL(dp) FUNCTION getEquilibriumTemp(gasTemperature,gasDensity,habingField,abundances,h2dis,h2form,zeta,cIonRate,dustAbundance&
+                                &,exoReactants1,exoReactants2,exoRates,exothermicities,writeFlag,dustTemp,turbVel,fixedCooling,coolingFlag&
+                                ,fixedHeating,heatingFixFlag)
+        !Habing field is radfield diminished by Av
+        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,h2form,zeta,cIonRate,dustAbundance,dustTemp,turbVel,fixedCooling,fixedHeating
+        REAL(dp), INTENT(in) :: abundances(:),exoReactants1(:),exoReactants2(:),exoRates(:),exothermicities(:)
+        LOGICAL, INTENT(IN) :: writeFlag,coolingFlag,heatingFixFlag
+        REAL(dp) :: previousTemp,previousDifference,thigh,tlow
+        LOGICAL :: binaryChopSearch,BRACKET_EXPANDED,TEMPERATURE_CONVERGED
+        REAL(dp) :: heating,cooling,temperatureDiff,difference,outTemp,relative_difference
+        REAL(dp),parameter :: TDIFF=0.01, FCRIT=0.1,TMIN=10.0, TMAX=1.0d5
+        INTEGER :: tempLoops = 0.0
+
+        previousTemp=0.0
+        previousDifference=0.0
+        thigh=TMAX
+        tlow=TMIN
+
+        binaryChopSearch=.False.
+        BRACKET_EXPANDED=.False.
+        TEMPERATURE_CONVERGED=.False.
+        tempLoops=0
+        getEquilibriumTemp=gasTemperature
+        DO WHILE (.NOT. TEMPERATURE_CONVERGED .AND. tempLoops .lt. 100)
+            tempLoops=tempLoops+1
+
+            !absolute difference between current temperature and previous
+            temperatureDiff=ABS(getEquilibriumTemp-previousTemp)
+
+            !then calculate overall heating/cooling rate
+            heating=fixedHeating
+            if (heatingFixFlag) heating=getHeatingRate(getEquilibriumTemp,gasDensity,habingField,abundances,h2dis,h2form,zeta,&
+              &cIonRate,dustAbundance,exoReactants1,exoReactants2,exoRates,exothermicities,dustTemp,turbVel)
+            !write(*,*) "Total Heating", heating
+
+            !set cooling rate to fixed cooling rate then overwrite if we want real cooling
+            cooling=fixedCooling
+            if (coolingFlag) cooling=getCoolingRate(getEquilibriumTemp,gasDensity,dustTemp,abundances,h2dis,turbVel,writeFlag)
+           
+            !Calculate the difference between the total heating and total cooling rates
+            !and the absolute value of the relative difference between the two rates
+            difference=heating-cooling
+            relative_difference=2.0D0*ABS(difference)/ABS(heating+cooling)
+
+            ! !Quick fix to get fixed T whilst calculating cooling
+            ! TEMPERATURE_CONVERGED=.TRUE.
+            ! EXIT
+            !Check if we've converged heating/cooling balanace
+            IF (relative_difference .lt. FCRIT) THEN
+                previousTemp=getEquilibriumTemp
+                TEMPERATURE_CONVERGED=.True.
+                CYCLE
+            END IF
+
+
+        !  Determine the temperature bracket to begin searching within by first increasing
+        !  or decreasing the temperature by 30% according to the heating-cooling imbalance
+            IF(.NOT. binaryChopSearch) THEN
+                !If the heating continues to outweigh the cooling, increase the temperature by 30%
+                IF(DIFFERENCE.GT.0 .AND. previousDifference.GE.0) THEN
+                    TLOW=getEquilibriumTemp ! Update the value of T_low
+                    getEquilibriumTemp=1.3D0*getEquilibriumTemp
+                    previousDifference=difference
+                    THIGH=getEquilibriumTemp ! Update the value of T_high
+        !     If the cooling continues to outweigh the heating, decrease the temperature by 30%
+              ELSE IF(DIFFERENCE.LT.0 .AND. previousDifference.LE.0) THEN
+                 THIGH=getEquilibriumTemp ! Update the value of T_high
+                 getEquilibriumTemp=0.7D0*getEquilibriumTemp
+                 previousDifference=DIFFERENCE
+                 TLOW=getEquilibriumTemp ! Update the value of T_low
+                
+
+        !     If the heating-cooling balance has reversed (either from net heating to net cooling or
+        !     vice-versa) then switch to the binary chop search method to determine the temperature
+              ELSE
+                 getEquilibriumTemp=(THIGH+TLOW)/2.0D0
+                 previousDifference=DIFFERENCE
+                 binaryChopSearch=.TRUE. ! From now on
+              END IF
+
+        !  Perform a binary chop search (the min-max range was found by the 30% increase/decrease method)
+           ELSE
+
+              IF(DIFFERENCE.GT.0) THEN
+                TLOW=getEquilibriumTemp ! Update the value of T_low
+                 getEquilibriumTemp=(getEquilibriumTemp+THIGH)/2.0D0
+                 previousDifference=DIFFERENCE
+                 
+              END IF
+              IF(DIFFERENCE.LT.0) THEN
+                 THIGH=getEquilibriumTemp !Update the value of T_high
+                 getEquilibriumTemp=(getEquilibriumTemp+TLOW)/2.0D0
+                 previousDifference=DIFFERENCE
+              END IF
+
+           END IF
+
+        !  If the search routine is unable to converge on a temperature that satisfies the thermal balance
+        !  criterion, expand the min-max search bracket asymmetrically and begin to narrow the search again
+        !  If the repeated search fails to converge once more, force convergence at the current temperature
+           IF(temperatureDiff.LE.TDIFF) THEN
+              IF(.NOT.BRACKET_EXPANDED) THEN
+                 THIGH=THIGH+SQRT(PI)
+                 TLOW=TLOW-SQRT(2.0)
+                 BRACKET_EXPANDED=.TRUE.
+              ELSE
+                 previousTemp=getEquilibriumTemp
+                 TEMPERATURE_CONVERGED=.TRUE.
+                 CYCLE
+              END IF
+           END IF
+
+        !  Check if the temperature falls outside of the allowed limits and force convergence if so
+           IF(getEquilibriumTemp.LE.TMIN .AND. DIFFERENCE.LT.0) THEN
+              getEquilibriumTemp=TMIN
+              TEMPERATURE_CONVERGED=.TRUE.
+           END IF
+           IF(getEquilibriumTemp.GE.TMAX .AND. DIFFERENCE.GT.0) THEN
+              getEquilibriumTemp=TMAX
+              TEMPERATURE_CONVERGED=.TRUE.
+           END IF
+
+        !  Replace the previous temperature with the current value
+           previousTemp=getEquilibriumTemp
+        END DO
+
+    END FUNCTION getEquilibriumTemp
+
 
     REAL(dp) FUNCTION getHeatingRate(gasTemperature,gasDensity,habingField,abundances,h2dis,h2form,zeta,cIonRate,dustAbundance&
                                     &,exoReactants1,exoReactants2,exoRates,exothermicities,dustTemp,turbVel)
         REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,h2form,zeta,cIonRate,dustAbundance,dustTemp,turbVel
         REAL(dp), INTENT(IN):: abundances(:),exoReactants1(:),exoReactants2(:),exoRates(:),exothermicities(:)
-        REAL(dp) :: heatingMode,L_TURB=5.0d0
+        REAL(dp) :: turbHeating,L_TURB=5.0d0
         REAL(dp) :: photoelec,h2forming,fuvpumping,photodis,cionizing,crheating,chemheating,gasgraincolls
 
+            !Photoelectric heating due to PAHs and large dust grains
             photoelec=photoelectricHeating(gasTemperature,gasDensity,habingField,abundances(nelec))
-            !write(*,*) heatingMode, "photoelectric"
-            getHeatingRate=photoelec
-
+            !heating due to H2 formation
             h2forming=H2FormationHeating(gasTemperature,gasDensity,abundances(nh),h2form)
-            !write(*,*) heatingMode, "H2 Form"
-            getHeatingRate=getHeatingRate+h2forming
-
-            fuvpumping=h2FUVPumpHeating(abundances(nh),abundances(nh2),gasTemperature,gasDensity,h2dis)
-            !write(*,*) heatingMode, "H2 FUV pump"
-            getHeatingRate=getHeatingRate+fuvpumping
-
+            !heating due to photodissociation of H2
             photodis=H2PhotodisHeating(gasDensity,abundances(nh2),h2dis)
-            !write(*,*) heatingMode, "H2 Dis"
-            getHeatingRate=getHeatingRate+photodis
-          
+            !heating due to FUV pumping of H2
+            fuvpumping=h2FUVPumpHeating(abundances(nh),abundances(nh2),gasTemperature,gasDensity,h2dis)
+            !heating due to carbon photo ionization          
             cionizing=CarbonIonizationHeating(cIonRate,abundances(nc),gasDensity)
-            !write(*,*) heatingMode, "C ionization"
-            getHeatingRate=getHeatingRate+cionizing
-
+            !CR dissociation of H2
             crheating=cosmicRayHeating(zeta,gasDensity,abundances(nh2))
-            !write(*,*) heatingMode, "CR Heating"
-            getHeatingRate=getHeatingRate+crheating
-
+            !Exothermic reactions
             chemheating=chemicalHeating(gasDensity,exoReactants1,exoReactants2,exoRates,exothermicities)
-            getHeatingRate=getHeatingRate+chemheating
-
-            heatingMode=3.5D-28*((turbVel/1.0D5)**3)*(1.0D0/L_TURB)*gasDensity
-            getHeatingRate=getHeatingRate+heatingMode
-
+            !turbulent heating
+            turbHeating=3.5D-28*((turbVel/1.0D5)**3)*(1.0D0/L_TURB)*gasDensity
+            !gas-grain collisional heaing/cooling
             gasgraincolls=gasGrainCollisions(gasTemperature,gasDensity,dustAbundance,dustTemp)
-            getHeatingRate=getHeatingRate+gasgraincolls
-            write(16,*) photoelec,h2forming,fuvpumping,photodis,cionizing,crheating,heatingmode,chemheating,gasgraincolls
+            !sum all heating types
+            getHeatingRate=photoelec+h2forming+fuvpumping+photodis+cionizing+crheating+chemheating+turbHeating+gasgraincolls
+            !write to file
+            write(16,*) photoelec,h2forming,fuvpumping,photodis,cionizing,crheating,turbHeating,chemheating,gasgraincolls
     END FUNCTION getHeatingRate
 
-    REAL(dp) FUNCTION getCoolingRate(gasTemperature,gasDensity,abundances,h2dis,turbVel,writeFlag)
-        REAL(dp), INTENT(IN) :: gasTemperature,gasDensity,h2dis,turbVel
+    REAL(dp) FUNCTION getCoolingRate(gasTemperature,gasDensity,dustTemp,abundances,h2dis,turbVel,writeFlag)
+        REAL(dp), INTENT(IN) :: gasTemperature,gasDensity,dustTemp,h2dis,turbVel
         REAL(dp), INTENT(IN) :: abundances(:)
         LOGICAL, INTENT(IN) :: writeFlag
         real(dp) :: coolingMode, coolings(5)
@@ -145,7 +266,7 @@ CONTAINS
          ! getCoolingRate=getCoolingRate+coolingMode
         getCoolingRate=0.0D0
         DO ti=1,5
-            coolings(ti)=lineCooling(gasTemperature,gasDensity,abundances,turbVel,writeFlag)
+            coolings(ti)=lineCooling(gasTemperature,gasDensity,dustTemp,abundances,turbVel,writeFlag)
         END DO
         call pair_insertion_sort(coolings)
         coolingMode=coolings(3)
@@ -155,8 +276,8 @@ CONTAINS
     END FUNCTION getCoolingRate
 
 
-    REAL(dp) FUNCTION lineCooling(gasTemperature,gasDensity,abundances,turbVel,writeFlag)
-        REAL(dp), INTENT(IN) :: gasTemperature,gasDensity,abundances(:),turbVel
+    REAL(dp) FUNCTION lineCooling(gasTemperature,gasDensity,dustTemp,abundances,turbVel,writeFlag)
+        REAL(dp), INTENT(IN) :: gasTemperature,gasDensity,dustTemp,abundances(:),turbVel
         LOGICAL, INTENT(IN) :: writeFlag
 
         INTEGER :: N,I!, collisionalIndices(5)=(/nh,nhx,nh2,nhe,nelec/)
@@ -175,10 +296,10 @@ CONTAINS
 
         !!write(*,*)  "lte done"
         !I should then do LVG interactions
-         DO I=1,200!while not converged and less than 100 tries:
+         DO I=1,500!while not converged and less than 100 tries:
             DO N=1,NCOOL
                 CALL CALCULATE_LEVEL_POPULATIONS(coolants(N),gasTemperature,gasDensity,&
-                    &abundances)
+                    &abundances,dustTemp)
             END DO
          !!write(*,*) "after Lvg",abundances(nh)
 
@@ -187,6 +308,7 @@ CONTAINS
             CALL CALCULATE_LINE_OPACITIES()
             CALL CALCULATE_LAMBDA_OPERATOR()
             IF (CHECK_CONVERGENCE()) EXIT
+            IF (I .eq. 199) write(*,*) "Failed convergence"
         END DO 
 
         !  Calculate the cooling rate due to the Lyman-alpha emission for each particle
@@ -556,7 +678,8 @@ FUNCTION gasGrainCollisions(gasTemperature,gasDensity,dustAbundance,dustTemp)
     real(dp), intent(in) :: gasTemperature,gasDensity,dustAbundance,dustTemp
     REAL(dp) :: gasGrainCollisions
     REAL(dp) :: nGrain,accommodation,C_GRAIN
-    nGrain=dustAbundance*gasDensity
+    !nGrain=dustAbundance*gasDensity
+    nGrain=2.0d-12*gasDensity
     C_GRAIN=PI*1.d-5**2
 
     !!$!  Accommodation fitting formula of Groenewegen (1994, A&A, 290, 531)
@@ -565,8 +688,8 @@ FUNCTION gasGrainCollisions(gasTemperature,gasDensity,dustAbundance,dustTemp)
     !  Accommodation coefficient of Burke & Hollenbach (1983, ApJ, 265, 223)
     accommodation=0.37D0*(1.0D0-0.8D0*EXP(-75.0D0/gasTemperature))
 
-    gasGrainCollisions=nGrain*C_GRAIN*gasDensity*SQRT(8.0*K_BOLTZ*gasTemperature/(PI*MH)) &
-                       & *accommodation*2.0*K_BOLTZ*(dustTemp-gasTemperature)
+    gasGrainCollisions=nGrain*C_GRAIN*gasDensity*SQRT(8.0*K_BOLTZ*gasTemperature/(PI*MP)) &
+                       & *accommodation*(2.0*K_BOLTZ*dustTemp-2.0*K_BOLTZ*gasTemperature)
 END FUNCTION gasGrainCollisions
 
 !=======================================================================
@@ -689,7 +812,7 @@ END FUNCTION calculateDustTemp
 !    ETA_H2_He=1.0D0+(0.055D0-1.0D0)/(1.0D0+2.17D0*X_PRIME**0.366) ! Heating efficiency for a pure H2-He mixture
 !    ETA_H_He =1.0D0+(0.117D0-1.0D0)/(1.0D0+7.95D0*ABUNDANCE(nelect)**0.678) ! Heating efficiency for a pure H-He mixture
 !    ETA=(10.0D0*R*ETA_H2_He+ETA_H_He)/(10.0D0*R+1.0D0) ! Total heating efficiency for mixed atomic and molecular gas
-!    H_X=PARTICLE%XRAY_ENERGY_DEPOSITION_RATE ! X-ray energy deposition rate per hydrogen nucleus (erg s^-1)
+!    H_X=XRAY_ENERGY_DEPOSITION_RATE ! X-ray energy deposition rate per hydrogen nucleus (erg s^-1)
 
 !    COULOMB_HEATING_RATE=ETA*GAS_DENSITY*H_X
 

@@ -28,7 +28,7 @@ IMPLICIT NONE
     !Set up with initial values. For chemistry this is setting initial abundances and assigning memory for ODE solver
     CALL initializePhysics
 
-    
+    gastemp=600.0
     ccol= 18058765988.12
     h2col=9205561518560.0
     coldens=632456000000000.0
@@ -47,7 +47,7 @@ IMPLICIT NONE
         !loop over parcels, counting from centre out to edge of cloud
         DO dstep=1,points
             !update chemistry from currentTime to targetTime
-            if (timeInYears .gt. 1) heatingFlag=.True.
+            if (timeInYears .gt. 5d5) heatingFlag=.True.
             !write(*,*) heatingFlag
             CALL updateChemistry
             currentTime=targetTime
