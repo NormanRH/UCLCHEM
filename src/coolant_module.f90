@@ -258,17 +258,19 @@ CONTAINS
       INTEGER :: N
       DO N=1,NCOOL
          IF (coolantNames(N).eq."p-H2") then
-             fraction=1.0D0/(1.0D0+ORTHO_PARA_RATIO(gasTemperature))
-             coolants(N)%density=abundances(coolantIndices(N))*gasDensity*fraction
+            fraction=1.0D0/(1.0D0+ORTHO_PARA_RATIO(gasTemperature))
+            ! write(*,*) gasTemperature,"p",fraction
+            coolants(N)%density=abundances(coolantIndices(N))*gasDensity*fraction
          ELSE IF (coolantNames(N) .eq. "o-H2") then
              fraction=1.0D0/(1.0D0+1.0D0/ORTHO_PARA_RATIO(gasTemperature))
              coolants(N)%density=abundances(coolantIndices(N))*gasDensity*fraction
+             ! write(*,*) gasTemperature,"o",fraction
+
          ELSE
              coolants(N)%density=abundances(coolantIndices(N))*gasDensity
              !write(*,*) coolantNames(N),abundances(coolantIndices(N))
          END IF
       END DO
-
    END SUBROUTINE
 
    !=======================================================================
@@ -345,8 +347,8 @@ CONTAINS
                !want to divide populations in factor3 by density of current and multiply by density of cloud 
                !averaged over the column to surface then multply by distance to cloud surface
                !that is (size*average_density/density) or column_density/density
-               STEP_SIZE = CLOUD_COLUMN/CLOUD_DENSITY
-               !STEP_SIZE = CLOUD_SIZE!
+               !STEP_SIZE = CLOUD_COLUMN/CLOUD_DENSITY
+               STEP_SIZE = CLOUD_SIZE!
                FACTOR2 = 1.0/coolants(N)%LINEWIDTH
   
                !Difference between average weight of ith level and average weight of jth level
@@ -930,7 +932,6 @@ FUNCTION ORTHO_PARA_RATIO(TEMPERATURE)
 
    INTEGER :: I,J,N,ORTHO_INDEX,PARA_INDEX
    REAL(dp) :: I_ORTHO,I_PARA,ORTHO_FRACTION,PARA_FRACTION
-
 !  Check if coolant data is available for the ortho and para forms
    ORTHO_INDEX=0; PARA_INDEX=0
    DO N=1,NCOOL
@@ -940,7 +941,6 @@ FUNCTION ORTHO_PARA_RATIO(TEMPERATURE)
 
 !  Calculate the exact ortho/para ratio if molecular data is available
    IF(ORTHO_INDEX.NE.0 .AND. PARA_INDEX.NE.0) THEN
-
       I_ORTHO=1.0D0; I_PARA=0.0D0 ! Total nuclear spins of the two forms
 
 !     Calculate the ortho/para ratio of H2 using the expression

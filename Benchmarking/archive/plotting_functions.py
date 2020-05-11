@@ -8,28 +8,31 @@ uclchem_cools=["Ly-alpha","C+ ","O ","C ","CO ","p-H2","o-H2"]
 uclchem_heats=["Photoelectric","H2Formation","FUVPumping","Photodissociation","Cionization","CRheating","turbHeating","Chemheating","gasGrainColls"]
 colors=sns.color_palette("deep",n_colors=len(uclchem_heats)+1)
 
-def pdr_heating_plot(axis,pdr_df,subscript,linestyle="-"):
+def pdr_heating_plot(axis,av_points,heat_file,linestyle="-"):
+	pdr_heat=pd.read_csv(heat_file,delimiter=" ")
+	pdr_heat[pdr_heat.astype(float)<=0.0]=1.0e-50
 	i=0
-	for col in [x for x in pdr_df.columns if subscript in x]:
+	for col in pdr_heat.columns[1:]:
 		if "named" not in col:
-			if "total" in col.lower():
-				axis.plot(pdr_df["Av"],pdr_df[col],label=col,color="black",ls=linestyle)
+			if col=="Total":
+				axis.plot(av_points,pdr_heat[col],label=col,color="black",ls=linestyle)
 			else:
-				axis.plot(pdr_df["Av"],pdr_df[col],label=col,color=colors[i],ls=linestyle)
+				axis.plot(av_points,pdr_heat[col],label=col,color=colors[i],ls=linestyle)
 				i=i+1
 	axis.set(xscale='log',yscale='log',xlabel="Av / mag",ylabel="$\Lambda$ / erg cm$^{-3}$ $s^{-1}$")
 	axis.set_ylim(bottom=1e-32)
 	return axis
 
 
-def pdr_abundance_plot(axis,abund_df):
+def pdr_abundance_plot(axis,av_points,abund_file):
+	abund_df=pd.read_csv(abund_file,delimiter=" ")
 
-	axis.plot(abund_df["Av"],abund_df["H_abun"],color=colors[0],label="H PDR",ls="--")
-	axis.plot(abund_df["Av"],abund_df["H2_abun"],color=colors[1],label="H2 PDR",ls="--")
-	axis.plot(abund_df["Av"],abund_df["H+_abun"],color=colors[2],label="H+ PDR",ls="--")
-	axis.plot(abund_df["Av"],abund_df["C+_abun"],color=colors[3],label="C+ PDR",ls="--")
-	axis.plot(abund_df["Av"],abund_df["C_abun"],color=colors[4],label="C PDR",ls="--")
-	axis.plot(abund_df["Av"],abund_df["e-_abun"],color=colors[5],label="E- PDR",ls="--")
+	axis.plot(av_points,abund_df["X(H)"],color=colors[0],label="H PDR",ls="--")
+	axis.plot(av_points,abund_df["X(H2)"],color=colors[1],label="H2 PDR",ls="--")
+	axis.plot(av_points,abund_df["X(H+)"],color=colors[2],label="H+ PDR",ls="--")
+	axis.plot(av_points,abund_df["X(C+)"],color=colors[3],label="C+ PDR",ls="--")
+	axis.plot(av_points,abund_df["X(C)"],color=colors[4],label="C PDR",ls="--")
+	axis.plot(av_points,abund_df["X(e-)"],color=colors[5],label="E- PDR",ls="--")
 	axis.set(xscale='log',yscale='log',xlabel="Av / mag",ylabel="Abundance")
 	return axis
 
@@ -130,9 +133,10 @@ def uclchem_abund_plot(uclchem_df,axis):
 	axis.set(xscale='log',yscale='log',xlabel="Av / mag",ylabel="Abundance")
 	return axis
 
-def temperature_plot(axis,uclpdr_df,uclchem_df,legend=True):
-	axis.plot(uclpdr_df["Av"],uclpdr_df["T_g"],ls="--",label="PDR T$_{g}$",color=colors[0])
-	axis.plot(uclpdr_df["Av"],uclpdr_df["T_d"],ls="--",label="PDR T$_{d}$",color=colors[3])
+def temperature_plot(axis,pdr_av,pdr_temp_file,uclchem_df,legend=True):
+	temp,dusttemp=np.loadtxt(pdr_temp_file,unpack=True,skiprows=1,usecols=[3,4],delimiter=",")
+	axis.plot(pdr_av,temp,ls="--",label="PDR T$_{g}$",color=colors[0])
+	axis.plot(pdr_av,dusttemp,ls="--",label="PDR T$_{d}$",color=colors[3])
 	axis.plot(uclchem_df["av"],uclchem_df["gasTemp"],label="UCLCHEM T$_{g}$",color=colors[0])
 	axis.plot(uclchem_df["av"],uclchem_df["dustTemp"],label="UCLCHEM T$_{d}$",color=colors[3])
 	axis.set(xscale='log',ylabel="Temperature / K",xlabel="Av / mag")

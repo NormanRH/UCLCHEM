@@ -285,6 +285,7 @@ IMPLICIT NONE
 
         CALL UPDATE_COOLANT_LINEWIDTHS(gasTemperature,turbVel)
         CALL UPDATE_COOLANT_ABUNDANCES(gasDensity,gasTemperature,abundances)
+
         DO N=1,NCOOL
 
             CALL CALCULATE_LTE_POPULATIONS(coolants(N)%NLEVEL,coolants(N)%ENERGY,coolants(N)%WEIGHT, &
@@ -310,7 +311,6 @@ IMPLICIT NONE
             IF (CHECK_CONVERGENCE()) EXIT
             IF (I .eq. 199) write(*,*) "Failed convergence"
         END DO 
-
         !  Calculate the cooling rate due to the Lyman-alpha emission for each particle
         !  using the analytical expression of Spitzer (1978) neglecting photon trapping
         DO N=1,NCOOL
@@ -324,6 +324,8 @@ IMPLICIT NONE
         !Calculate the cooling rates
         lineCooling=0.0
         DO N=1,NCOOL
+          IF (N .eq. 6) write(33,*) 
+            WHERE(coolants(N)%EMISSIVITY .lt. -HUGE(1.0)) coolants(N)%EMISSIVITY = 0.0
             moleculeCooling(N)=SUM(coolants(N)%EMISSIVITY,MASK=.NOT.ISNAN(coolants(N)%EMISSIVITY))
 
             ! !we get these wild changes in cooling rate so let's force it not to change too much in a timestep
@@ -333,7 +335,7 @@ IMPLICIT NONE
             ! ELSE
             !     coolants(N)%previousCooling=moleculeCooling
             ! END IF
-            IF (moleculeCooling(N) .lt. -1.0d-30) moleculeCooling(N)=0.0d0
+            IF (moleculeCooling(N) .lt. 0.0) moleculeCooling(N)=0.0d0
             !IF (moleculeCooling(N) .gt. -1.0d-30 .and. abundances(coolantIndices(N)) .gt. 1.0d-20) 
             lineCooling= lineCooling+moleculeCooling(N)
         END DO

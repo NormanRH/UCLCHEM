@@ -476,8 +476,8 @@ SUBROUTINE equilibrium(dictionary, outSpeciesIn,results_dir,model_no)
         IF (loopCount .gt. 50) EXIT
     END DO
     CALL output
-    CALL writePopulations(results_dir//model_no//'.pop',model_no)
-    CALL writeOpacities(results_dir//model_no//'.tau',model_no)
+    ! CALL writePopulations(results_dir//model_no//'.pop',model_no)
+    ! CALL writeOpacities(results_dir//model_no//'.tau',model_no)
     CLOSE(10)
     CLOSE(11)
     CLOSE(7)

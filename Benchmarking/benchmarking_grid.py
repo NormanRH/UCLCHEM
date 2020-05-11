@@ -8,7 +8,7 @@ from os import path,mkdir
 def run_model(a):
 	i,cloud_size,h2_col,c_col,col_dens,model_type,rad_field,init_temp,dens,heating_flag,av_factor,zeta=a
 	params={
-		"columnFile":f"Benchmarking/{model_type}/av_grid/{i:.0f}.dat",
+		"columnFile":f"Benchmarking/raw/{model_type}/av_grid/{i:.0f}.dat",
 		"initialTemp":init_temp,
 		"initialDens":dens,
 		"finalTime":2.0e6,
@@ -30,7 +30,7 @@ def run_model(a):
 		"avFactor":av_factor}	
 
 	outSpecies="H2O,H2,H,H+,HE+,C,C+,O,O+,CO,CO+,E-"
-	uclchem.general(params,outSpecies,f"Benchmarking/{model_type}/av_grid/",f"{i:.0f}")
+	uclchem.general(params,outSpecies,f"Benchmarking/raw/{model_type}/av_grid/",f"{i:.0f}")
 	return 1
 
 if __name__ == '__main__':
@@ -41,6 +41,8 @@ if __name__ == '__main__':
 				"1e5_1e3":6.289E-22,
 				"1e5_1e5.5":6.289E-22,
 				"fixed_cooling":6.289E-22,
+				"10_linear_increase":6.289E-22,
+				"10_linear_decrease":6.289E-22,
 				"low_rad":1.6e-21,
 				"low_rad_fixed":1.6e-21,
 				"square":1.6e-21,
@@ -51,6 +53,8 @@ if __name__ == '__main__':
 		"1e5_1e3":3.84,
 		"1e5_1e5.5":3.84,
 		"fixed_cooling":3.84,
+		"10_linear_increase":3.84,
+		"10_linear_decrease":3.84,
 		"low_rad":1.23,
 		"low_rad_fixed":1.23,
 		"square":1.23,
@@ -58,10 +62,10 @@ if __name__ == '__main__':
 	}
 
 
-	for model_type in ["square"]:#"10_1e5.5","1e5_1e5.5","10_1e3","1e5_1e3","low_rad","high_cr"
+	for model_type in ["10_1e5.5"]:
 		fixed=("low_rad_fixed" in model_type)
 
-		base_path=f"Benchmarking/{model_type}/"
+		base_path=f"Benchmarking/raw/{model_type}/"
 		if not path.exists(base_path):
 			mkdir(base_path)
 
@@ -73,20 +77,19 @@ if __name__ == '__main__':
 			mkdir(base_path+"av_grid/heating/")
 
 
-		#prop.out has radiation field for each particle. first one is the surface field we need
-		model_df=pd.read_csv(f"{base_path}{model_type}.prop.out",nrows=5)
-		#but we need it in Habing for UCLCHEM
-		rad_field=model_df.loc[1,"chi"]*1.7
-
-		model_df=pd.read_csv(f"{base_path}model_tests.dat")
+		model_df=pd.read_csv(f"Benchmarking/grid_inputs/{model_type}.csv")
 		with open(f"{base_path}av_grid.dat","w") as f:
-			f.write("model,cloud_size,av,h2col,coldens\n")
+			f.write("model,cloud_size,av,h2col,ccol,coldens\n")
 			for i,row in model_df.iterrows():
 				cloud_size=row["size"]/3.086e18
-				h2_col=row["total_h_col"]
+				h2_col=row["total_h2_col"]
 				c_col=row["total_c_col"]
 				col_dens=row["total_col_dens"]
 				dens=row["n_H"]
+
+
+				#UCLCHEM in Habing so convert uclpdr Draine field
+				rad_field=row["FUV"]*1.7
 
 				if fixed:
 					initialTemp=row["T_gas"]
@@ -100,10 +103,10 @@ if __name__ == '__main__':
 				zeta=zetas[model_type]
 
 				models.append([i,cloud_size,h2_col,c_col,col_dens,model_type,rad_field,initialTemp,dens,heatingFlag,av_converts[model_type],zeta])
-				f.write(f"{i},{cloud_size},{av},{h2_col},{col_dens}\n")
+				f.write(f"{i},{cloud_size},{av},{h2_col},{c_col},{col_dens}\n")
 
 	start=time.time()
-	pool=Pool(24)
+	pool=Pool(12)
 	print("mapping...")
 	rel=pool.map(run_model,models)
 	print(rel)

@@ -4,6 +4,7 @@ output/
 *.png
 *.out
 
+Benchmarking/uclpdr/
 #no compiled files
 *.pyc
 *.so
