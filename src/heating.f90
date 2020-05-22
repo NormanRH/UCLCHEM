@@ -38,9 +38,10 @@ IMPLICIT NONE
 
 
     REAL(dp) FUNCTION getTempDot(gasTemperature,gasDensity,habingField,abundances,h2dis,h2form,zeta,cIonRate,dustAbundance&
-                                &,exoReactants1,exoReactants2,exoRates,exothermicities,writeFlag,dustTemp,turbVel)
+                                &,exoReactants1,exoReactants2,exoRates,exothermicities,writeFlag,dustTemp,turbVel,metallicity)
         !Habing field is radfield diminished by Av
-        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,h2form,zeta,cIonRate,dustAbundance,dustTemp,turbVel
+        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,h2form
+        REAL(dp), INTENT(in) :: zeta,cIonRate,dustAbundance,dustTemp,turbVel,metallicity
         REAL(dp), INTENT(in) :: abundances(:),exoReactants1(:),exoReactants2(:),exoRates(:),exothermicities(:)
         LOGICAL, INTENT(IN) :: writeFlag
 
@@ -52,7 +53,7 @@ IMPLICIT NONE
 
         !then calculate overall heating/cooling rate
         heating=getHeatingRate(gasTemperature,gasDensity,habingField,abundances,h2dis,h2form,zeta,cIonRate,dustAbundance&
-            &,exoReactants1,exoReactants2,exoRates,exothermicities,dustTemp,turbVel)
+            &,exoReactants1,exoReactants2,exoRates,exothermicities,dustTemp,turbVel,metallicity)
         !write(*,*) "Total Heating", heating
 
         IF (gasTemperature .gt. 10.0) THEN
@@ -76,144 +77,17 @@ IMPLICIT NONE
 
     END FUNCTION getTempDot
 
-    REAL(dp) FUNCTION getEquilibriumTemp(gasTemperature,gasDensity,habingField,abundances,h2dis,h2form,zeta,cIonRate,dustAbundance&
-                                &,exoReactants1,exoReactants2,exoRates,exothermicities,writeFlag,dustTemp,turbVel,fixedCooling,coolingFlag&
-                                ,fixedHeating,heatingFixFlag)
-        !Habing field is radfield diminished by Av
-        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,h2form,zeta,cIonRate,dustAbundance,dustTemp,turbVel,fixedCooling,fixedHeating
-        REAL(dp), INTENT(in) :: abundances(:),exoReactants1(:),exoReactants2(:),exoRates(:),exothermicities(:)
-        LOGICAL, INTENT(IN) :: writeFlag,coolingFlag,heatingFixFlag
-        REAL(dp) :: previousTemp,previousDifference,thigh,tlow
-        LOGICAL :: binaryChopSearch,BRACKET_EXPANDED,TEMPERATURE_CONVERGED
-        REAL(dp) :: heating,cooling,temperatureDiff,difference,outTemp,relative_difference
-        REAL(dp),parameter :: TDIFF=0.01, FCRIT=0.1,TMIN=10.0, TMAX=1.0d5
-        INTEGER :: tempLoops = 0.0
-
-        previousTemp=0.0
-        previousDifference=0.0
-        thigh=TMAX
-        tlow=TMIN
-
-        binaryChopSearch=.False.
-        BRACKET_EXPANDED=.False.
-        TEMPERATURE_CONVERGED=.False.
-        tempLoops=0
-        getEquilibriumTemp=gasTemperature
-        DO WHILE (.NOT. TEMPERATURE_CONVERGED .AND. tempLoops .lt. 100)
-            tempLoops=tempLoops+1
-
-            !absolute difference between current temperature and previous
-            temperatureDiff=ABS(getEquilibriumTemp-previousTemp)
-
-            !then calculate overall heating/cooling rate
-            heating=fixedHeating
-            if (heatingFixFlag) heating=getHeatingRate(getEquilibriumTemp,gasDensity,habingField,abundances,h2dis,h2form,zeta,&
-              &cIonRate,dustAbundance,exoReactants1,exoReactants2,exoRates,exothermicities,dustTemp,turbVel)
-            !write(*,*) "Total Heating", heating
-
-            !set cooling rate to fixed cooling rate then overwrite if we want real cooling
-            cooling=fixedCooling
-            if (coolingFlag) cooling=getCoolingRate(getEquilibriumTemp,gasDensity,dustTemp,abundances,h2dis,turbVel,writeFlag)
-           
-            !Calculate the difference between the total heating and total cooling rates
-            !and the absolute value of the relative difference between the two rates
-            difference=heating-cooling
-            relative_difference=2.0D0*ABS(difference)/ABS(heating+cooling)
-
-            ! !Quick fix to get fixed T whilst calculating cooling
-            ! TEMPERATURE_CONVERGED=.TRUE.
-            ! EXIT
-            !Check if we've converged heating/cooling balanace
-            IF (relative_difference .lt. FCRIT) THEN
-                previousTemp=getEquilibriumTemp
-                TEMPERATURE_CONVERGED=.True.
-                CYCLE
-            END IF
-
-
-        !  Determine the temperature bracket to begin searching within by first increasing
-        !  or decreasing the temperature by 30% according to the heating-cooling imbalance
-            IF(.NOT. binaryChopSearch) THEN
-                !If the heating continues to outweigh the cooling, increase the temperature by 30%
-                IF(DIFFERENCE.GT.0 .AND. previousDifference.GE.0) THEN
-                    TLOW=getEquilibriumTemp ! Update the value of T_low
-                    getEquilibriumTemp=1.3D0*getEquilibriumTemp
-                    previousDifference=difference
-                    THIGH=getEquilibriumTemp ! Update the value of T_high
-        !     If the cooling continues to outweigh the heating, decrease the temperature by 30%
-              ELSE IF(DIFFERENCE.LT.0 .AND. previousDifference.LE.0) THEN
-                 THIGH=getEquilibriumTemp ! Update the value of T_high
-                 getEquilibriumTemp=0.7D0*getEquilibriumTemp
-                 previousDifference=DIFFERENCE
-                 TLOW=getEquilibriumTemp ! Update the value of T_low
-                
-
-        !     If the heating-cooling balance has reversed (either from net heating to net cooling or
-        !     vice-versa) then switch to the binary chop search method to determine the temperature
-              ELSE
-                 getEquilibriumTemp=(THIGH+TLOW)/2.0D0
-                 previousDifference=DIFFERENCE
-                 binaryChopSearch=.TRUE. ! From now on
-              END IF
-
-        !  Perform a binary chop search (the min-max range was found by the 30% increase/decrease method)
-           ELSE
-
-              IF(DIFFERENCE.GT.0) THEN
-                TLOW=getEquilibriumTemp ! Update the value of T_low
-                 getEquilibriumTemp=(getEquilibriumTemp+THIGH)/2.0D0
-                 previousDifference=DIFFERENCE
-                 
-              END IF
-              IF(DIFFERENCE.LT.0) THEN
-                 THIGH=getEquilibriumTemp !Update the value of T_high
-                 getEquilibriumTemp=(getEquilibriumTemp+TLOW)/2.0D0
-                 previousDifference=DIFFERENCE
-              END IF
-
-           END IF
-
-        !  If the search routine is unable to converge on a temperature that satisfies the thermal balance
-        !  criterion, expand the min-max search bracket asymmetrically and begin to narrow the search again
-        !  If the repeated search fails to converge once more, force convergence at the current temperature
-           IF(temperatureDiff.LE.TDIFF) THEN
-              IF(.NOT.BRACKET_EXPANDED) THEN
-                 THIGH=THIGH+SQRT(PI)
-                 TLOW=TLOW-SQRT(2.0)
-                 BRACKET_EXPANDED=.TRUE.
-              ELSE
-                 previousTemp=getEquilibriumTemp
-                 TEMPERATURE_CONVERGED=.TRUE.
-                 CYCLE
-              END IF
-           END IF
-
-        !  Check if the temperature falls outside of the allowed limits and force convergence if so
-           IF(getEquilibriumTemp.LE.TMIN .AND. DIFFERENCE.LT.0) THEN
-              getEquilibriumTemp=TMIN
-              TEMPERATURE_CONVERGED=.TRUE.
-           END IF
-           IF(getEquilibriumTemp.GE.TMAX .AND. DIFFERENCE.GT.0) THEN
-              getEquilibriumTemp=TMAX
-              TEMPERATURE_CONVERGED=.TRUE.
-           END IF
-
-        !  Replace the previous temperature with the current value
-           previousTemp=getEquilibriumTemp
-        END DO
-
-    END FUNCTION getEquilibriumTemp
-
 
     REAL(dp) FUNCTION getHeatingRate(gasTemperature,gasDensity,habingField,abundances,h2dis,h2form,zeta,cIonRate,dustAbundance&
-                                    &,exoReactants1,exoReactants2,exoRates,exothermicities,dustTemp,turbVel)
-        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,h2form,zeta,cIonRate,dustAbundance,dustTemp,turbVel
+                                    &,exoReactants1,exoReactants2,exoRates,exothermicities,dustTemp,turbVel,metallicity)
+        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis
+        REAL(dp), INTENT(in) :: h2form,zeta,cIonRate,dustAbundance,dustTemp,turbVel,metallicity
         REAL(dp), INTENT(IN):: abundances(:),exoReactants1(:),exoReactants2(:),exoRates(:),exothermicities(:)
         REAL(dp) :: turbHeating,L_TURB=5.0d0
         REAL(dp) :: photoelec,h2forming,fuvpumping,photodis,cionizing,crheating,chemheating,gasgraincolls
 
             !Photoelectric heating due to PAHs and large dust grains
-            photoelec=photoelectricHeating(gasTemperature,gasDensity,habingField,abundances(nelec))
+            photoelec=photoelectricHeating(gasTemperature,gasDensity,habingField,abundances(nelec),metallicity)
             !heating due to H2 formation
             h2forming=H2FormationHeating(gasTemperature,gasDensity,abundances(nh),h2form)
             !heating due to photodissociation of H2
@@ -471,8 +345,8 @@ IMPLICIT NONE
     ! !  Includes photoelectric heating due to PAHs, VSGs and larger grains
     ! !  Assumes a gas-to-dust mass ratio of 100:1
     ! !-----------------------------------------------------------------------
-    REAL(dp) FUNCTION photoelectricHeating(gasTemperature,gasDensity,habingField,electronAbund)
-        REAL(dp), INTENT(IN) :: gasTemperature,gasDensity,habingField,electronAbund
+    REAL(dp) FUNCTION photoelectricHeating(gasTemperature,gasDensity,habingField,electronAbund,metallicity)
+        REAL(dp), INTENT(IN) :: gasTemperature,gasDensity,habingField,electronAbund,metallicity
         REAL(dp), PARAMETER :: PHI_PAH=0.4d0,ALPHA=0.944D0
         REAL(dp) :: beta,delta,epsilon,nElec,PAH_HEATING_RATE,PAH_COOLING_RATE
         ! REAL(dp), PARAMETER ::C0=5.72D+0,C1=3.45D-2,C2=7.08D-3
@@ -496,8 +370,8 @@ IMPLICIT NONE
         PAH_HEATING_RATE=1.30D-24*EPSILON*habingField*gasDensity
         PAH_COOLING_RATE=4.65D-30*gasTemperature**ALPHA*(DELTA**BETA)*nElec*PHI_PAH*gasDensity
         photoelectricHeating=PAH_HEATING_RATE-PAH_COOLING_RATE
-    ! !  Assume the PE heating rate scales linearly with metallicity
-    !    photoelectricHeating=photoelectricHeating*METALLICITY
+        !Assume the PE heating rate scales linearly with metallicity
+        photoelectricHeating=photoelectricHeating*metallicity
     END FUNCTION photoelectricHeating
 
     ! !-----------------------------------------------------------------------
@@ -977,48 +851,130 @@ END MODULE heating
 ! !  Assume the PE heating rate scales linearly with metallicity
 !    BT94_PHOTOELECTRIC_HEATING_RATE=BT94_PHOTOELECTRIC_HEATING_RATE*METALLICITY
 
-    ! FUNCTION getEquilibriumTemp(gasTemperature,gasDensity,habingField,abundances,h2dis,zeta,cIonRate,dustAbundance&
-    !     &,exoReactants1,exoReactants2,exoRates,exothermicities)
-    !     REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,zeta,cIonRate,dustAbundance
-    !     REAL(dp) :: getEquilibriumTemp
-    !     REAL(dp), INTENT(in) :: abundances(:),exoReactants1(:),exoReactants2(:),exoRates(:),exothermicities(:)
-    !     REAL(dp) :: adiabaticIdx,heating,cooling,fMax=5.0d-6,fRatio,maxTemp=1.0d6,minTemp=5.0d0
-    !     INTEGER :: maxTempIter=100,ti
+ ! REAL(dp) FUNCTION getEquilibriumTemp(gasTemperature,gasDensity,habingField,abundances,h2dis,h2form,zeta,cIonRate,dustAbundance&
+ !                                &,exoReactants1,exoReactants2,exoRates,exothermicities,writeFlag,dustTemp,turbVel,fixedCooling,coolingFlag&
+ !                                ,fixedHeating,heatingFixFlag)
+ !        !Habing field is radfield diminished by Av
+ !        REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis,h2form,zeta,cIonRate,dustAbundance,dustTemp,turbVel,fixedCooling,fixedHeating
+ !        REAL(dp), INTENT(in) :: abundances(:),exoReactants1(:),exoReactants2(:),exoRates(:),exothermicities(:)
+ !        LOGICAL, INTENT(IN) :: writeFlag,coolingFlag,heatingFixFlag
+ !        REAL(dp) :: previousTemp,previousDifference,thigh,tlow
+ !        LOGICAL :: binaryChopSearch,BRACKET_EXPANDED,TEMPERATURE_CONVERGED
+ !        REAL(dp) :: heating,cooling,temperatureDiff,difference,outTemp,relative_difference
+ !        REAL(dp),parameter :: TDIFF=0.01, FCRIT=0.1,TMIN=10.0, TMAX=1.0d5
+ !        INTEGER :: tempLoops = 0.0
 
-    !     maxTemp=1.0d6
-    !     minTemp=5.0d0
-    !     !initial guess is current temperature
-    !     getEquilibriumTemp=gasTemperature
+ !        previousTemp=0.0
+ !        previousDifference=0.0
+ !        thigh=TMAX
+ !        tlow=TMIN
 
-    !     !find heating and cooling rate for current temp
-    !     heating=getHeatingRate(gasTemperature,gasDensity,habingField,abundances,h2dis,zeta,cIonRate,dustAbundance&
-    !         &,exoReactants1,exoReactants2,exoRates,exothermicities)
-    !     cooling=getCoolingRate(gasTemperature,gasDensity,abundances,h2dis)
+ !        binaryChopSearch=.False.
+ !        BRACKET_EXPANDED=.False.
+ !        TEMPERATURE_CONVERGED=.False.
+ !        tempLoops=0
+ !        getEquilibriumTemp=gasTemperature
+ !        DO WHILE (.NOT. TEMPERATURE_CONVERGED .AND. tempLoops .lt. 100)
+ !            tempLoops=tempLoops+1
 
-    !      !then get measure of their differences
-    !     fRatio=2.0D0*abs(heating-cooling)/abs(heating+cooling)
-    !     !write(*,*) ti,getEquilibriumTemp,heating,Cooling,fRatio
+ !            !absolute difference between current temperature and previous
+ !            temperatureDiff=ABS(getEquilibriumTemp-previousTemp)
 
-    !     !whilst that difference is large, change temp to reduce it
-    !     IF (fRatio .gt. fMax) THEN
-    !         DO ti=1,maxTempIter
-    !             !if heating>cooling gas is too cold so minTemp is at least current temp
-    !             IF (heating .gt. cooling) minTemp=getEquilibriumTemp
-    !             !equally cooling implies temp can't be larger than current.
-    !             IF (cooling .gt. heating) maxTemp=getEquilibriumTemp
-    !             !take average of min and max to get new trial
-    !             getEquilibriumTemp=(minTemp+maxTemp)*0.5d0
+ !            !then calculate overall heating/cooling rate
+ !            heating=fixedHeating
+ !            if (heatingFixFlag) heating=getHeatingRate(getEquilibriumTemp,gasDensity,habingField,abundances,h2dis,h2form,zeta,&
+ !              &cIonRate,dustAbundance,exoReactants1,exoReactants2,exoRates,exothermicities,dustTemp,turbVel)
+ !            !write(*,*) "Total Heating", heating
 
-    !             !recalculate heatnig,cooling and ratio
-    !             heating=getHeatingRate(getEquilibriumTemp,gasDensity,habingField,abundances,h2dis,zeta,cIonRate,dustAbundance&
-    !                 &,exoReactants1,exoReactants2,exoRates,exothermicities)
-    !             cooling=getCoolingRate(getEquilibriumTemp,gasDensity,abundances,h2dis)
-    !             fRatio=2.0D0*abs(heating-cooling)/abs(heating+cooling)
-    !             IF (fRatio .lt. fMax) exit
-    !             IF (abs(minTemp-maxTemp).lt.0.5) exit
-    !             !write(*,*) ti,getEquilibriumTemp,heating,Cooling,minTemp,maxTemp
-    !         END DO
-    !     ELSE
-    !         getEquilibriumTemp=gasTemperature
-    !     END IF
-    ! END FUNCTION getEquilibriumTemp
+ !            !set cooling rate to fixed cooling rate then overwrite if we want real cooling
+ !            cooling=fixedCooling
+ !            if (coolingFlag) cooling=getCoolingRate(getEquilibriumTemp,gasDensity,dustTemp,abundances,h2dis,turbVel,writeFlag)
+           
+ !            !Calculate the difference between the total heating and total cooling rates
+ !            !and the absolute value of the relative difference between the two rates
+ !            difference=heating-cooling
+ !            relative_difference=2.0D0*ABS(difference)/ABS(heating+cooling)
+
+ !            ! !Quick fix to get fixed T whilst calculating cooling
+ !            ! TEMPERATURE_CONVERGED=.TRUE.
+ !            ! EXIT
+ !            !Check if we've converged heating/cooling balanace
+ !            IF (relative_difference .lt. FCRIT) THEN
+ !                previousTemp=getEquilibriumTemp
+ !                TEMPERATURE_CONVERGED=.True.
+ !                CYCLE
+ !            END IF
+
+
+ !        !  Determine the temperature bracket to begin searching within by first increasing
+ !        !  or decreasing the temperature by 30% according to the heating-cooling imbalance
+ !            IF(.NOT. binaryChopSearch) THEN
+ !                !If the heating continues to outweigh the cooling, increase the temperature by 30%
+ !                IF(DIFFERENCE.GT.0 .AND. previousDifference.GE.0) THEN
+ !                    TLOW=getEquilibriumTemp ! Update the value of T_low
+ !                    getEquilibriumTemp=1.3D0*getEquilibriumTemp
+ !                    previousDifference=difference
+ !                    THIGH=getEquilibriumTemp ! Update the value of T_high
+ !        !     If the cooling continues to outweigh the heating, decrease the temperature by 30%
+ !              ELSE IF(DIFFERENCE.LT.0 .AND. previousDifference.LE.0) THEN
+ !                 THIGH=getEquilibriumTemp ! Update the value of T_high
+ !                 getEquilibriumTemp=0.7D0*getEquilibriumTemp
+ !                 previousDifference=DIFFERENCE
+ !                 TLOW=getEquilibriumTemp ! Update the value of T_low
+                
+
+ !        !     If the heating-cooling balance has reversed (either from net heating to net cooling or
+ !        !     vice-versa) then switch to the binary chop search method to determine the temperature
+ !              ELSE
+ !                 getEquilibriumTemp=(THIGH+TLOW)/2.0D0
+ !                 previousDifference=DIFFERENCE
+ !                 binaryChopSearch=.TRUE. ! From now on
+ !              END IF
+
+ !        !  Perform a binary chop search (the min-max range was found by the 30% increase/decrease method)
+ !           ELSE
+
+ !              IF(DIFFERENCE.GT.0) THEN
+ !                TLOW=getEquilibriumTemp ! Update the value of T_low
+ !                 getEquilibriumTemp=(getEquilibriumTemp+THIGH)/2.0D0
+ !                 previousDifference=DIFFERENCE
+                 
+ !              END IF
+ !              IF(DIFFERENCE.LT.0) THEN
+ !                 THIGH=getEquilibriumTemp !Update the value of T_high
+ !                 getEquilibriumTemp=(getEquilibriumTemp+TLOW)/2.0D0
+ !                 previousDifference=DIFFERENCE
+ !              END IF
+
+ !           END IF
+
+ !        !  If the search routine is unable to converge on a temperature that satisfies the thermal balance
+ !        !  criterion, expand the min-max search bracket asymmetrically and begin to narrow the search again
+ !        !  If the repeated search fails to converge once more, force convergence at the current temperature
+ !           IF(temperatureDiff.LE.TDIFF) THEN
+ !              IF(.NOT.BRACKET_EXPANDED) THEN
+ !                 THIGH=THIGH+SQRT(PI)
+ !                 TLOW=TLOW-SQRT(2.0)
+ !                 BRACKET_EXPANDED=.TRUE.
+ !              ELSE
+ !                 previousTemp=getEquilibriumTemp
+ !                 TEMPERATURE_CONVERGED=.TRUE.
+ !                 CYCLE
+ !              END IF
+ !           END IF
+
+ !        !  Check if the temperature falls outside of the allowed limits and force convergence if so
+ !           IF(getEquilibriumTemp.LE.TMIN .AND. DIFFERENCE.LT.0) THEN
+ !              getEquilibriumTemp=TMIN
+ !              TEMPERATURE_CONVERGED=.TRUE.
+ !           END IF
+ !           IF(getEquilibriumTemp.GE.TMAX .AND. DIFFERENCE.GT.0) THEN
+ !              getEquilibriumTemp=TMAX
+ !              TEMPERATURE_CONVERGED=.TRUE.
+ !           END IF
+
+ !        !  Replace the previous temperature with the current value
+ !           previousTemp=getEquilibriumTemp
+ !        END DO
+
+ !    END FUNCTION getEquilibriumTemp

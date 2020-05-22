@@ -347,8 +347,8 @@ CONTAINS
                !want to divide populations in factor3 by density of current and multiply by density of cloud 
                !averaged over the column to surface then multply by distance to cloud surface
                !that is (size*average_density/density) or column_density/density
-               !STEP_SIZE = CLOUD_COLUMN/CLOUD_DENSITY
-               STEP_SIZE = CLOUD_SIZE!
+               STEP_SIZE = CLOUD_COLUMN/CLOUD_DENSITY
+               !STEP_SIZE = CLOUD_SIZE!
                FACTOR2 = 1.0/coolants(N)%LINEWIDTH
   
                !Difference between average weight of ith level and average weight of jth level

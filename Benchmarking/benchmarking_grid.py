@@ -6,9 +6,10 @@ import pandas as pd
 from os import path,mkdir
 
 def run_model(a):
-	i,cloud_size,h2_col,c_col,col_dens,model_type,rad_field,init_temp,dens,heating_flag,av_factor,zeta=a
+	i,cloud_size,h2_col,c_col,col_dens,model_type,rad_field,init_temp,dens,heating_flag,av_factor,zeta,metallicity=a
 	params={
 		"columnFile":f"Benchmarking/raw/{model_type}/av_grid/{i:.0f}.dat",
+		"outputFile":f"Benchmarking/raw/{model_type}/av_grid/{i:.0f}_full.dat",
 		"initialTemp":init_temp,
 		"initialDens":dens,
 		"finalTime":2.0e6,
@@ -26,6 +27,7 @@ def run_model(a):
 		"fmg":5.00e-06,
 		"ion":2,
 		"zeta":zeta,
+		"metallicity":metallicity,
 		"heatingFlag":heating_flag,
 		"avFactor":av_factor}	
 
@@ -41,30 +43,34 @@ if __name__ == '__main__':
 				"1e5_1e3":6.289E-22,
 				"1e5_1e5.5":6.289E-22,
 				"fixed_cooling":6.289E-22,
+				"low_metallicity":6.289E-22,
 				"10_linear_increase":6.289E-22,
 				"10_linear_decrease":6.289E-22,
 				"low_rad":1.6e-21,
 				"low_rad_fixed":1.6e-21,
-				"square":1.6e-21,
+				"square":6.289E-22,
+				"sine":6.289E-22,
 				"high_cr":1.6e-21}
 
 	zetas={"10_1e3":3.84,
 		"10_1e5.5":3.84,
 		"1e5_1e3":3.84,
 		"1e5_1e5.5":3.84,
+		"low_metallicity":3.84,
 		"fixed_cooling":3.84,
 		"10_linear_increase":3.84,
 		"10_linear_decrease":3.84,
 		"low_rad":1.23,
 		"low_rad_fixed":1.23,
-		"square":1.23,
+		"square":3.84,
+		"sine":3.84,
 		"high_cr":123.0
 	}
 
 
-	for model_type in ["10_1e5.5"]:
-		fixed=("low_rad_fixed" in model_type)
-
+	for model_type in ["low_metallicity"]:
+		fixed=True#("low_rad_fixed" in model_type)
+		low_metallicity= (model_type=="low_metallicity")
 		base_path=f"Benchmarking/raw/{model_type}/"
 		if not path.exists(base_path):
 			mkdir(base_path)
@@ -90,23 +96,28 @@ if __name__ == '__main__':
 
 				#UCLCHEM in Habing so convert uclpdr Draine field
 				rad_field=row["FUV"]*1.7
+				print(rad_field)
 
+				initialTemp=row["T_g"]
 				if fixed:
-					initialTemp=row["T_gas"]
 					heatingFlag=False
 				else:
-					initialTemp=50.0
 					heatingFlag=True
 
 				# av conversion factor CHANGED TO MATCH UCL_PDR, should find most agreed value after benchmarking
 				av=col_dens*av_converts[model_type]
 				zeta=zetas[model_type]
 
-				models.append([i,cloud_size,h2_col,c_col,col_dens,model_type,rad_field,initialTemp,dens,heatingFlag,av_converts[model_type],zeta])
+				if low_metallicity:
+					metallicity=0.2
+				else:
+					metallicity=1.0
+
+				models.append([i,cloud_size,h2_col,c_col,col_dens,model_type,rad_field,initialTemp,dens,heatingFlag,av_converts[model_type],zeta,metallicity])
 				f.write(f"{i},{cloud_size},{av},{h2_col},{c_col},{col_dens}\n")
 
 	start=time.time()
-	pool=Pool(12)
+	pool=Pool(24)
 	print("mapping...")
 	rel=pool.map(run_model,models)
 	print(rel)

@@ -26,7 +26,7 @@ IMPLICIT NONE
     
     !Option column output
     character(LEN=15),allocatable :: outSpecies(:)
-    logical :: columnFlag,heatingFlag
+    logical :: columnFlag,heatingFlag,fullOutput
     integer :: nout
     integer, allocatable :: outIndx(:)
 
@@ -38,7 +38,7 @@ IMPLICIT NONE
     TYPE(VODE_OPTS) :: OPTIONS
 
     !initial fractional elemental abudances and arrays to store abundances
-    REAL(dp) :: fh,fhe,fc,fo,fn,fs,fmg,fsi,fcl,fp,ff,h2col,cocol,ccol,junk1,junk2
+    REAL(dp) :: fh,fhe,fc,fo,fn,fs,fmg,fsi,fcl,fp,ff,h2col,cocol,ccol,junk1,junk2,metallicity
     REAL(dp),allocatable :: abund(:,:),mantle(:)
     
     !Variables controlling chemistry
@@ -75,10 +75,8 @@ CONTAINS
         IF (readAbunds.eq.0) THEN
             !ensure abund is initially zero
             abund= 0.0D0
-            !As default, have half in molecular hydrogen and half in atomic hydrogen
-            abund(nh,:) = fh     
-            abund(nh2,:) = (0.5*(1.0e0-fh))
-            abund(nhe,:) = fhe                       
+
+            !then assign metals
             abund(no,:) = fo  
             !abund(nn,:) = fn               
             !abund(nsx,:) = fs
@@ -87,12 +85,9 @@ CONTAINS
             !abund(nclx,:) = fcl 
             !abund(np,:) = fp
             !abund(nf,:) = ff
-
             !abund(nfe,:) = ffe
             !abund(nna,:) = fna
-            abund(NEQ-1,:)=gasTemp
-            abund(NEQ,:)=density      
-
+            
             !Decide how much carbon is initially ionized using parameters.f90
             SELECT CASE (ion)
                 CASE(0)
@@ -105,7 +100,20 @@ CONTAINS
                     abund(nc,:)=0.0
                     abund(ncx,:)=fc
             END SELECT
+
             abund(nspec,:)=abund(ncx,:)!+abund(nsix,:)+abund(nsx,:)+abund(nclx,:)
+            !and adjust for metallicity
+
+            !As default, have half in molecular hydrogen and half in atomic hydrogen
+            abund(nh,:) = fh 
+            abund(nh2,:) = (0.5*(1.0e0-fh))
+            abund(nhe,:) = fhe                       
+            abund=abund*metallicity
+
+            abund(NEQ-1,:)=gasTemp
+            abund(NEQ,:)=density      
+
+
 
         ENDIF
         !Initial calculations of diffusion frequency for each species bound to grain
@@ -134,6 +142,11 @@ CONTAINS
         IF (columnFlag) write(11,333) specName(outIndx)
         333 format("Time,Density,gasTemp,dustTemp,av,",(999(A,:,',')))
         
+
+         INQUIRE( UNIT=10, OPENED=fullOutput )
+         if (fullOutput) write(10,334) specName
+         334 format("Time,Density,gasTemp,dustTemp,av,radfield,zeta,",(999(A,:,',')))
+
     END SUBROUTINE initializeChemistry
 
 !Reads input reaction and species files as well as the final step of previous run if this is phase 2
@@ -186,45 +199,10 @@ CONTAINS
 
 !Writes physical variables and fractional abundances to output file, called every time step.
     SUBROUTINE output
-        LOGICAL fullOutput
 
          INQUIRE( UNIT=10, OPENED=fullOutput ) 
-         IF (fullOutput) THEN
-            !write out cloud properties
-
-            write(10,8020) timeInYears,density(dstep),gasTemp(dstep),av(dstep),radfield,zeta,h2form,fc,fo,&
-                            &fmg,fhe,dstep
-            !and a blank line
-            write(10,8000)
-            !and then all the abundances for this step
-            write(10,8010) (specname(i),abund(i,dstep),i=1,nspec) 
-            write(10,8000)
-        END IF
-        !If this is the last time step of phase I, write a start file for phase II
-        IF (readAbunds .eq. 0) THEN
-           IF (switch .eq. 0 .and. timeInYears .ge. finalTime& 
-               &.or. switch .eq. 1 .and.density(dstep) .ge. finalDens) THEN
-               write(7,8020) timeInYears,density(dstep),gasTemp(dstep),av(dstep),radfield,zeta,h2form,fc,fo,&
-                       &fmg,fhe,dstep
-               write(7,8000)
-               write(7,8010) (specname(i),abund(i,dstep),i=1,nspec)
-               write(7,8000)
-           ENDIF
-        ENDIF
-        8000  format(/)
-        8010  format(4(1x,a15,'=',1x,1pe10.3,:))
-        8020 format(&
-        &'age of cloud             time  = ',1pe10.3,' years',/,&
-        &'total hydrogen density   dens  = ',1pe10.4,' cm-3',/,&
-        &'cloud temperature        temp  = ',0pf8.2,' k',/,&
-        &'visual extinction        av    = ',0pf12.4,' mags',/,&
-        &'radiation field          rad   = ',0pf10.2,' (habing = 1)',/,&
-        &'cosmic ray ioniz. rate   zeta  = ',0pf10.2,' (unit = 1.3e-17s-1)',/,&
-        &'h2 formation rate coef.        = ',1pe8.2,' cm3 s-1',/,&
-        &'c / htot = ',1pe7.1,4x,' o / htot = ',1pe7.1,/&
-        &'mg / htot = ',1pe7.1,&
-        &' he / htot = ',1pe7.1,&
-        &' depth     = ',i3)
+         IF (fullOutput)  write(10,8020) timeInYears,density(dstep),gasTemp(dstep),dustTemp(dstep),av(dstep),radfield,zeta, abund(:neq-2,dstep)
+        8020 format(1pe11.3,',',1pe11.4,',',0pf8.2,',',0pf8.2,',',1pe11.4,',',1pe11.4,',',0pf8.2,',',(999(1pe15.5,:,',')))
 
         !Every 'writestep' timesteps, write the chosen species out to separate file
         !choose species you're interested in by looking at parameters.f90
@@ -278,8 +256,9 @@ CONTAINS
             !reset parameters for DVODE
             ITASK=1 !try to integrate to targetTime
             ISTATE=1 !pretend every step is the first
-            reltol=1e-4 !relative tolerance effectively sets decimal place accuracy
+            reltol=1e-5 !relative tolerance effectively sets decimal place accuracy
             abstol=1.0d-14*abund(:,dstep) !absolute tolerances depend on value of abundance
+            abstol(neq-1)=1.0d-6
             WHERE(abstol<1d-20) abstol=1d-20 ! to a minimum degree
 
             !get reaction rates for this iteration - do it here since we may reloop a few times
@@ -294,7 +273,7 @@ CONTAINS
             !Tempdot is only recalculated after change in temperature of 1 degree so we force a calculation here
             IF (heatingFlag) tempDot=getTempDot(abund(NEQ-1,dstep),abund(NEQ,dstep),radfield*EXP(-UV_FAC*av(dstep)),abund(:,dstep),h2dis,h2form,zeta,rate(nR_C_hv),&
                 &1.0/GAS_DUST_DENSITY_RATIO,abund(exoReactants1,dstep),abund(exoReactants2,dstep),RATE(exoReacIdxs),exothermicities,.True.,&
-                &dustTemp(dstep),turbVel)
+                &dustTemp(dstep),turbVel,metallicity)
 
             !Call the integrator.
             OPTIONS = SET_OPTS(METHOD_FLAG=22, ABSERR_VECTOR=abstol, RELERR=reltol,USER_SUPPLIED_JACOBIAN=.FALSE.,MXSTEP=MXSTEP)
@@ -366,7 +345,7 @@ CONTAINS
             IF (ABS(y(NEQ-1)-oldTemp).gt.1) THEN
                 ! write(*,*) "recalc!"
                 tempDot=getTempDot(Y(NEQ-1),Y(NEQ),radfield*EXP(-UV_FAC*av(dstep)),Y,h2dis,h2form,zeta,rate(nR_C_hv),1.0/GAS_DUST_DENSITY_RATIO&
-                    &,y(exoReactants1),y(exoReactants2),RATE(exoReacIdxs),exothermicities,.False.,dustTemp(dstep),turbVel)
+                    &,y(exoReactants1),y(exoReactants2),RATE(exoReacIdxs),exothermicities,.False.,dustTemp(dstep),turbVel,metallicity)
                 oldTemp=y(NEQ-1)
             END IF
             ydot(NEQ-1)=tempDot

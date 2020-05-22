@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 cloud_files={"square":"square.cloud",
+			"sine":"sine.cloud",
 			"10_linear_decrease":"linear-density-decrease.cloud",
 			"10_linear_increase":"linear-density-increase.cloud",
 			"high_rad":"1e3.cloud",
@@ -21,11 +22,12 @@ cloud_files={"square":"square.cloud",
 			"10_1e5":"1e5.5.cloud",
 			"1e5_1e3":"1e3.cloud",
 			"1e5_1e5":"1e5.5.cloud",
+			"low_metallicity":"1e3.cloud",
 			"fixed_cooling":"1e5.5.cloud"}
 
 
 
-for cloud_type in ["square","10_linear_increase","10_linear_decrease","10_1e5","1e5_1e5","10_1e3","1e5_1e3","high_cr"]:
+for cloud_type in ["low_metallicity"]:#square","10_linear_increase","10_linear_decrease","10_1e5","1e5_1e5","10_1e3","1e5_1e3","high_cr
 	#load up density for each particle
 	particle_df=pd.read_csv(f"Benchmarking/uclpdr/{cloud_type}_output.csv")[["Particle","T_g","n_H","H2_abun","C_abun","FUV"]]
 
@@ -57,10 +59,10 @@ for cloud_type in ["square","10_linear_increase","10_linear_decrease","10_1e5","
 	#integrate change in distance to get size
 	particle_df["size"]=particle_df.delta_x.cumsum()
 
-
+	n_samples=96
 	#Then choose 48 evenly spaced points to sample
-	step=int(np.floor(len(particle_df)/48))#only want 48 models
+	step=int(np.floor(len(particle_df)/n_samples))#only want 48 models
 	print(step,len(particle_df))
-	particle_df=particle_df.iloc[0:step*48+1:step] #only want 48 models
+	particle_df=particle_df.iloc[0:step*n_samples+1:step] #only want 48 models
 	particle_df.to_csv(f"Benchmarking/grid_inputs/{cloud_type}.csv",index=False)
 

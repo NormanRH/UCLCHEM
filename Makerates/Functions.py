@@ -35,6 +35,9 @@ class Reaction:
 		self.alpha=float(inputRow[7])
 		self.beta=float(inputRow[8])
 		self.gamma=float(inputRow[9])
+		if inputRow[10]=="":
+			inputRow[10]=0.0
+			inputRow[11]=40000.0
 		self.templow=float(inputRow[10])
 		self.temphigh=float(inputRow[11])
 		self.duplicate=False
