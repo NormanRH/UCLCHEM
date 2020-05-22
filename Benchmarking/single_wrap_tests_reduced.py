@@ -19,10 +19,16 @@ def run_model(a):
 		"ccol":c_col,
 		"coldens":col_dens,
 		"rout":cloud_size,
+		"fc":1.0e-4,
+		"fhe":0.1,
+		"fh":0.4,
+		"fo":3.0e-4,
+		"fr":0.0,
+		"fmg":5.00e-06,
 		"ion":2,
 		"zeta":zeta,
 		"metallicity":metallicity,
-		"heatingFlag":False,#heating_flag,
+		"heatingFlag":heating_flag,
 		"avFactor":av_factor}	
 
 	outSpecies="H2O,H2,H,H+,HE+,C,C+,O,O+,CO,CO+,E-"
@@ -63,7 +69,7 @@ zetas={"10_1e3":3.84,
 start=time.time()
 
 
-model_type="low_rad"
+model_type="1e5_1e5.5"
 
 
 fixed_temp=("low_rad_fixed" in model_type)
@@ -72,7 +78,7 @@ fixed_heating=("fixed_heating" in model_type)
 low_metallicity= (model_type=="low_metallicity")
 
 model_df=pd.read_csv(f"Benchmarking/grid_inputs/{model_type}.csv")
-i=42
+i=0
 row=model_df.iloc[i]
 cloud_size=row["size"]/3.086e18
 h2_col=row["total_h2_col"]
@@ -106,7 +112,7 @@ if low_metallicity:
 	print(metallicity)
 else:
 	metallicity=1.0
-dens=1.0e5
+
 # av conversion factor CHANGED TO MATCH UCL_PDR, should find most agreed value after benchmarking
 av=col_dens*av_converts[model_type]
 zeta=zetas[model_type]

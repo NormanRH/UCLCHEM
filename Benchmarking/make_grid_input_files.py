@@ -27,7 +27,7 @@ cloud_files={"square":"square.cloud",
 
 
 
-for cloud_type in ["low_metallicity"]:#square","10_linear_increase","10_linear_decrease","10_1e5","1e5_1e5","10_1e3","1e5_1e3","high_cr
+for cloud_type in ["low_rad"]:#square","10_linear_increase","10_linear_decrease","10_1e5","1e5_1e5","10_1e3","1e5_1e3","high_cr
 	#load up density for each particle
 	particle_df=pd.read_csv(f"Benchmarking/uclpdr/{cloud_type}_output.csv")[["Particle","T_g","n_H","H2_abun","C_abun","FUV"]]
 

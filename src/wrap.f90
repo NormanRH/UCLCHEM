@@ -12,8 +12,8 @@ SUBROUTINE GENERAL(dictionary, outSpeciesIn,results_dir,model_no)
     close(11)
     close(7)
 
-    open(15,file=results_dir//"cooling/"//model_no//".dat",status="unknown")
-    open(16,file=results_dir//"heating/"//model_no//".dat",status="unknown")
+    ! open(15,file=results_dir//"cooling/"//model_no//".dat",status="unknown")
+    ! open(16,file=results_dir//"heating/"//model_no//".dat",status="unknown")
 
     IF (scan(dictionary, 'columnFile') .EQ. 0) THEN
         columnFlag=.False.
@@ -158,8 +158,8 @@ SUBROUTINE GENERAL(dictionary, outSpeciesIn,results_dir,model_no)
                 READ(inputValue,*) phi
             CASE('ebmaxuvcr')
                 READ(inputValue,*) ebmaxuvcr
-            CASE('uvy')
-                READ(inputValue,*) uvy
+            CASE('uv_yield')
+                READ(inputValue,*) uv_yield
             CASE('omega')
                 READ(inputValue,*) omega
             CASE('vs')

@@ -28,8 +28,8 @@ IMPLICIT NONE
         CLOUD_DENSITY=gasDensity
         cloud_size=cloudSize
 
-        write(15,*) "Lyman-alpha C+ O C CO p-H2 o-H2 "
-        write(16,*) "Photoelectric H2Formation FUVPumping Photodissociation Cionization CRheating turbHeating Chemheating gasGrainColls"
+        ! write(15,*) "Lyman-alpha C+ O C CO p-H2 o-H2 "
+        ! write(16,*) "Photoelectric H2Formation FUVPumping Photodissociation Cionization CRheating turbHeating Chemheating gasGrainColls"
 
         ! coolantIndices(ncool+1)=nspec
         !Here I could find the reactions that give chemical heating and cooling
@@ -107,7 +107,7 @@ IMPLICIT NONE
             !sum all heating types
             getHeatingRate=photoelec+h2forming+fuvpumping+photodis+cionizing+crheating+chemheating+turbHeating+gasgraincolls
             !write to file
-            write(16,*) photoelec,h2forming,fuvpumping,photodis,cionizing,crheating,turbHeating,chemheating,gasgraincolls
+            !write(16,*) photoelec,h2forming,fuvpumping,photodis,cionizing,crheating,turbHeating,chemheating,gasgraincolls
     END FUNCTION getHeatingRate
 
     REAL(dp) FUNCTION getCoolingRate(gasTemperature,gasDensity,dustTemp,abundances,h2dis,turbVel,writeFlag)
@@ -213,7 +213,7 @@ IMPLICIT NONE
             !IF (moleculeCooling(N) .gt. -1.0d-30 .and. abundances(coolantIndices(N)) .gt. 1.0d-20) 
             lineCooling= lineCooling+moleculeCooling(N)
         END DO
-        IF (writeFlag) write(15,*) moleculeCooling
+        !IF (writeFlag) write(15,*) moleculeCooling
         !!write(*,*) lineCooling
     END FUNCTION lineCooling
 

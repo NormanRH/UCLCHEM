@@ -41,7 +41,7 @@ phase=1;
 
 !non-thermal Desorption. Turn it all on/offwith desorb. Can also turn off h2, cosmic ray induced and uv induced individually.
 desorb=1;
-h2desorb=1;crdesorb=1;uvcr=1;
+h2desorb=1;crdesorb=1;uvcr=1;thermdesorb=1
 
 !Set to 1 to immediately add all grain surface material to gas phase.
 instantSublimation=0
@@ -96,5 +96,5 @@ columnFile='output/column.dat'
 !Description and use found in rate.f90
 !Desorption treatment is described in Roberts et al. 2007, these are rates and efficiencies of processes that cause desorption
 ebmaxh2=1.21d3;epsilon=0.01;ebmaxcrf=1.21d3;uvcreff=1.0d-3
-ebmaxcr=1.21d3;phi=1.0d5;ebmaxuvcr=1.0d4; uvy=0.1
+ebmaxcr=1.21d3;phi=1.0d5;ebmaxuvcr=1.0d4; uv_yield=0.1
 omega=0.42; !changed for uclcpdr

@@ -43,7 +43,7 @@ IMPLICIT NONE
     
     !Variables controlling chemistry
     REAL(dp) :: radfield,zeta,fr,omega,grainArea,cion,h2form,h2dis,tempDot,oldTemp=0.0
-    REAL(dp) :: ebmaxh2,epsilon,ebmaxcrf,ebmaxcr,phi,ebmaxuvcr,uvy,uvcreff
+    REAL(dp) :: ebmaxh2,epsilon,ebmaxcrf,ebmaxcr,phi,ebmaxuvcr,uv_yield,uvcreff
     REAL(dp), allocatable ::vdiff(:)
 
     !Turbulent velocity of gas in cm/s for heating functions
@@ -51,18 +51,23 @@ IMPLICIT NONE
 
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !variables for diffusion reactions on the grains, CGS unless otherwise stated.
+    !Grain surface parameters
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    LOGICAL, parameter :: DIFFUSE_REACT_COMPETITION=.True., GRAINS_HAVE_ICE=.True.
-    REAL(dp), parameter :: GAS_DUST_MASS_RATIO=100.0
-    REAL(dp), parameter :: GRAIN_AREA=2.4d-22,GRAIN_RADIUS=1.d-5 
-    REAL(dp), parameter :: CHEMICAL_BARRIER_THICKNESS = 1.40d-8  !gre Parameter used to compute the probability for a surface reaction with 
+    REAL(dp), PARAMETER :: GAS_DUST_MASS_RATIO=100.0,GRAIN_RADIUS=1.d-5, GRAIN_DENSITY = 3.0 ! Mass density of a dust grain
+    REAL(dp), PARAMETER :: THERMAL_VEL= SQRT(8.0d0*K_BOLTZ/(PI*AMU)) !Thermal velocity without the factor of SQRT(T/m) where m is moelcular mass in amu
+
+    !reciprocal of fractional abundance of dust grains (we only divide by number density so better to store reciprocal)
+    REAL(dp), PARAMETER :: GAS_DUST_DENSITY_RATIO = (4.0*PI*(GRAIN_RADIUS**3)*GRAIN_DENSITY*GAS_DUST_MASS_RATIO)/(3.0 * AMU)
+    !Grain area per h nuclei, calculated from average radius.
+    REAL(dp), PARAMETER :: GRAIN_AREA_PER_H=4.0*PI*GRAIN_RADIUS*GRAIN_RADIUS/GAS_DUST_DENSITY_RATIO
+
+    !Below are values for grain surface reactions
+    LOGICAL, PARAMETER :: DIFFUSE_REACT_COMPETITION=.True., GRAINS_HAVE_ICE=.True.
+    REAL(dp), PARAMETER :: CHEMICAL_BARRIER_THICKNESS = 1.40d-8  !gre Parameter used to compute the probability for a surface reaction with 
     !! activation energy to occur through quantum tunneling (Hasegawa et al. Eq 6 (1992).)
-    REAL(dp), parameter :: SURFACE_SITE_DENSITY = 1.5d15 ! site density on one grain [cm-2]
-    REAL(dp), parameter :: VDIFF_PREFACTOR=2.0*K_BOLTZ*SURFACE_SITE_DENSITY/PI/PI/AMU
-    REAL(dp), parameter :: GRAIN_DENSITY = 3.0 ! Mass density of a dust grain
-    REAL(dp), parameter :: NUM_SITES_PER_GRAIN = GRAIN_RADIUS*GRAIN_RADIUS*SURFACE_SITE_DENSITY*4.0*PI
-    REAL(dp), parameter :: GAS_DUST_DENSITY_RATIO = (4.0*PI*(GRAIN_RADIUS**3)*GRAIN_DENSITY*GAS_DUST_MASS_RATIO)/(3.0 * AMU)
+    REAL(dp), PARAMETER :: SURFACE_SITE_DENSITY = 1.5d15 ! site density on one grain [cm-2]
+    REAL(dp), PARAMETER :: VDIFF_PREFACTOR=2.0*K_BOLTZ*SURFACE_SITE_DENSITY/PI/PI/AMU
+    REAL(dp), PARAMETER :: NUM_SITES_PER_GRAIN = GRAIN_RADIUS*GRAIN_RADIUS*SURFACE_SITE_DENSITY*4.0*PI
 CONTAINS
 !This gets called immediately by main so put anything here that you want to happen before the time loop begins, reader is necessary.
     SUBROUTINE initializeChemistry
@@ -78,11 +83,11 @@ CONTAINS
 
             !then assign metals
             abund(no,:) = fo  
-            !abund(nn,:) = fn               
-            !abund(nsx,:) = fs
+            abund(nn,:) = fn               
+            abund(nsx,:) = fs
             abund(nmg,:) = fmg
-            !abund(nsix,:) = fsi                
-            !abund(nclx,:) = fcl 
+            abund(nsix,:) = fsi                
+            abund(nclx,:) = fcl 
             !abund(np,:) = fp
             !abund(nf,:) = ff
             !abund(nfe,:) = ffe
@@ -101,14 +106,14 @@ CONTAINS
                     abund(ncx,:)=fc
             END SELECT
 
-            abund(nspec,:)=abund(ncx,:)!+abund(nsix,:)+abund(nsx,:)+abund(nclx,:)
+            abund(nspec,:)=abund(ncx,:)+abund(nsix,:)+abund(nsx,:)+abund(nclx,:)
             !and adjust for metallicity
+            abund=abund*metallicity
 
             !As default, have half in molecular hydrogen and half in atomic hydrogen
             abund(nh,:) = fh 
             abund(nh2,:) = (0.5*(1.0e0-fh))
             abund(nhe,:) = fhe                       
-            abund=abund*metallicity
 
             abund(NEQ-1,:)=gasTemp
             abund(NEQ,:)=density      

@@ -109,8 +109,8 @@ IF (paramFile .ne. "") THEN
                 READ(buffer,*,iostat=ios) phi
             CASE('ebmaxuvcr')
                 READ(buffer,*,iostat=ios) ebmaxuvcr
-            CASE('uvy')
-                READ(buffer,*,iostat=ios) uvy
+            CASE('uv_yield')
+                READ(buffer,*,iostat=ios) uv_yield
             CASE('omega')
                 READ(buffer,*,iostat=ios) omega
             CASE('vs')

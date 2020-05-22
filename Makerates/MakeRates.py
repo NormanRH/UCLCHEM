@@ -15,12 +15,13 @@ import os
 #reactionFile = 'inputFiles/umist12-uclpdredit.csv'
 #reactionFile_grain = 'inputFiles/uclpdr-network.csv'
 #speciesFile = 'inputFiles/uclpdrspecies.csv'
-
+#therm_flag=False
 
 reactionFile = 'inputFiles/umist12-uclpdredit.csv'
 reactionFile_grain = 'inputFiles/uclgrainbasic.csv'
 exotherm_file='inputFiles/reaction_energy.csv'
 speciesFile = 'inputFiles/uclspeciesbasic.csv'
+therm_flag=True
 
 if not os.path.exists('outputFiles'):
     os.makedirs('outputFiles')
@@ -45,7 +46,7 @@ nReactions2, reactions2, dropped_reactions = read_reaction_file(reactionFile_gra
 nExotherms, exotherm_reacs,dropped_reactions = read_reaction_file(exotherm_file,speciesList,'UCL')
 reactionList=reactions1+reactions2
 #reactionList=reactions2
-reactionList=add_desorb_reactions(speciesList,reactionList)
+reactionList=add_desorb_reactions(speciesList,reactionList,therm_flag=therm_flag)
 
 #Keep only the species that are involved in the final reaction list
 print('\nRemoving unused species...')

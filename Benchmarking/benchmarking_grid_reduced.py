@@ -61,8 +61,8 @@ if __name__ == '__main__':
 	}
 
 
-	for model_type in ["low_metallicity","10_linear_increase","10_linear_decrease","10_1e5.5","1e5_1e5.5","10_1e3","1e5_1e3","high_cr","low_rad","sine"]:
-		fixed=True#("low_rad_fixed" in model_type)
+	for model_type in ["low_metallicity"]:
+		fixed=("low_rad_fixed" in model_type)
 		low_metallicity= (model_type=="low_metallicity")
 		base_path=f"Benchmarking/raw/{model_type}/"
 		if not path.exists(base_path):
@@ -110,7 +110,7 @@ if __name__ == '__main__':
 				f.write(f"{i},{cloud_size},{av},{h2_col},{c_col},{col_dens}\n")
 
 	start=time.time()
-	pool=Pool(24)
+	pool=Pool(2)
 	print("mapping...")
 	rel=pool.map(run_model,models)
 	print(rel)

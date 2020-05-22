@@ -58,6 +58,7 @@ class Reaction:
 		return False
 
 
+reaction_types=['PHOTON','CRP','CRPHOT','FREEZE','CRH','PHOTD','THERM','XRAY','XRSEC','XRLYA','XRPHOT','DESOH2','DESCR','DEUVCR',"CHEMDES","DIFF"]
 elementList=['H','D','HE','C','N','O','F','P','S','CL','LI','NA','MG','SI','PAH','15N']
 elementMass=[1,2,4,12,14,16,19,31,32,35,3,23,24,28,420,15]
 symbols=['#','+','-','(',')']
@@ -82,9 +83,8 @@ def read_reaction_file(fileName, speciesList, ftype):
 	print(fileName)
 	reactions=[]
 	dropped_reactions=[]
-	keepList=[]
-	# keeplist includes the elements that ALL the reactions should be formed from 
-	keepList.extend(['','NAN','#','E-','e-','ELECTR','PHOTON','CRP','CRPHOT','FREEZE','CRH','PHOTD','THERM','XRAY','XRSEC','XRLYA','XRPHOT','DESOH2','DESCR','DEUVCR',"CHEMDES","DIFF"])
+	keepList=['','NAN','#','E-','e-','ELECTR']
+	keepList.extend(reaction_types)
 	for species in speciesList:
 		keepList.append(species.name)			                                  
 	if ftype == 'UMIST': # if it is a umist database file
@@ -151,10 +151,15 @@ def filter_species(speciesList,reactionList):
 
 #All species should freeze out at least as themselves and all grain species should desorb according to their binding energy
 #This function adds those reactions automatically to slim down the grain file
-def add_desorb_reactions(speciesList,reactionList):
+def add_desorb_reactions(speciesList,reactionList,therm_flag=False):
+	if therm_flag:
+		desorb_reacs=['DESOH2',"DESCR","DEUVCR","THERM"]
+	else:
+		desorb_reacs=['DESOH2',"DESCR","DEUVCR"]
+
 	for species in speciesList:
 		if species.is_grain_species():
-			for reacType in ['DESOH2',"DESCR","DEUVCR"]:
+			for reacType in desorb_reacs:
 				newReaction=Reaction([species.name,reacType,'NAN',species.name[1:],'NAN','NAN','NAN',1,0,species.bindener,0.0,10000.0])
 				reactionList.append(newReaction)
 	return reactionList
@@ -207,7 +212,6 @@ def make_capitals(fileName):
 	output.close()
 
 def find_constituents(speciesList):
-   
 	for species in speciesList:
 		speciesName=species.name
 		i=0
@@ -528,13 +532,14 @@ def write_network_file(fileName,speciesList,reactionList,exotherm_reacs):
 
 	#store indices of important species for use in code
 	speciesIndices=""
-	for element in ["E-","C+","H+","H2","SI+","S+","CL+","CO","HE+","HCO+","H3O+","H3+"]+elementList:
+	for element in ["E-","C+","H+","H2","SI+","S+","CL+","CO","HE+","HCO+","H3O+","H3+","#H","#H2","#N","#O",'#OH']+elementList:
 		try:
 			species_index=names.index(element)+1
-			name=element.lower().replace("+","x").replace("e-","elec")
-			speciesIndices+="n{0}={1},".format(name,species_index)
 		except:
 			print(element," not in network")
+			species_index=9999
+		name=element.lower().replace("+","x").replace("e-","elec").replace("#",'g')
+		speciesIndices+="n{0}={1},".format(name,species_index)
 	if len(speciesIndices)>50:
 		speciesIndices=speciesIndices[:60]+"&\n&"+speciesIndices[60:]
 	speciesIndices=speciesIndices[:-1]+"\n"
@@ -585,35 +590,38 @@ def write_network_file(fileName,speciesList,reactionList,exotherm_reacs):
 	alpha=[]
 	beta=[]
 	gama=[]
+	reacTypes=[]
 	duplicates=[]
 	tmins=[]
 	tmaxs=[]
 	for i,reaction in enumerate(reactionList):
-		reactant1.append(reaction.reactants[0])
-		reactant2.append(reaction.reactants[1])
-		reactant3.append(reaction.reactants[2])
-		prod1.append(reaction.products[0])
-		prod2.append(reaction.products[1])
-		prod3.append(reaction.products[2])
-		prod4.append(reaction.products[3])
+		reactant1.append(find_reactant(names,reaction.reactants[0]))
+		reactant2.append(find_reactant(names,reaction.reactants[1]))
+		reactant3.append(find_reactant(names,reaction.reactants[2]))
+		prod1.append(find_reactant(names,reaction.products[0]))
+		prod2.append(find_reactant(names,reaction.products[1]))
+		prod3.append(find_reactant(names,reaction.products[2]))
+		prod4.append(find_reactant(names,reaction.products[3]))
 		alpha.append(reaction.alpha)
 		beta.append(reaction.beta)
 		gama.append(reaction.gamma)
+		reacTypes.append(get_reaction_type(reaction.reactants[1],reaction.reactants[2]))
 		if reaction.duplicate or reaction.gamma<-200.0:
 			duplicates.append(i+1)
 			tmaxs.append(reaction.temphigh)
 			tmins.append(reaction.templow)
 
-	openFile.write(array_to_string("\tre1",reactant1,type="string"))
-	openFile.write(array_to_string("\tre2",reactant2,type="string"))
-	openFile.write(array_to_string("\tre3",reactant3,type="string"))
-	openFile.write(array_to_string("\tp1",prod1,type="string"))
-	openFile.write(array_to_string("\tp2",prod2,type="string"))
-	openFile.write(array_to_string("\tp3",prod3,type="string"))
-	openFile.write(array_to_string("\tp4",prod4,type="string"))
+	openFile.write(array_to_string("\tre1",reactant1,type="int"))
+	openFile.write(array_to_string("\tre2",reactant2,type="int"))
+	openFile.write(array_to_string("\tre3",reactant3,type="int"))
+	openFile.write(array_to_string("\tp1",prod1,type="int"))
+	openFile.write(array_to_string("\tp2",prod2,type="int"))
+	openFile.write(array_to_string("\tp3",prod3,type="int"))
+	openFile.write(array_to_string("\tp4",prod4,type="int"))
 	openFile.write(array_to_string("\talpha",alpha,type="float",parameter=False))
 	openFile.write(array_to_string("\tbeta",beta,type="float",parameter=False))
 	openFile.write(array_to_string("\tgama",gama,type="float",parameter=False))
+	openFile.write(array_to_string("\treacType",reacTypes,type="string",parameter=True))
 
 	openFile.write(array_to_string("\tduplicates",duplicates,type="int",parameter=True))
 	openFile.write(array_to_string("\tminTemps",tmins,type="float",parameter=True))
@@ -642,6 +650,19 @@ def write_network_file(fileName,speciesList,reactionList,exotherm_reacs):
 
 	openFile.write("END MODULE network")
 	openFile.close()
+
+def find_reactant(species_list,reactant):
+	try:
+		return species_list.index(reactant)+1
+	except:
+		return 9999
+
+def get_reaction_type(reac2,reac3):
+	if (reac3=="CHEMDES") or (reac3=="DIFF"):
+		return reac3
+	else:
+		return reac2
+
 
 def array_to_string(name,array,type="int",parameter=True):
 	if parameter:
