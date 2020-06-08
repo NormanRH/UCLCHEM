@@ -26,7 +26,7 @@ IMPLICIT NONE
     
     !Option column output
     character(LEN=15),allocatable :: outSpecies(:)
-    logical :: columnFlag,heatingFlag,fullOutput
+    logical :: columnFlag,heatingFlag,fullOutput,heatWriteFlag
     integer :: nout
     integer, allocatable :: outIndx(:)
 
@@ -105,19 +105,15 @@ CONTAINS
                     abund(nc,:)=0.0
                     abund(ncx,:)=fc
             END SELECT
-
             abund(nspec,:)=abund(ncx,:)+abund(nsix,:)+abund(nsx,:)+abund(nclx,:)
             !and adjust for metallicity
             abund=abund*metallicity
-
             !As default, have half in molecular hydrogen and half in atomic hydrogen
             abund(nh,:) = fh 
             abund(nh2,:) = (0.5*(1.0e0-fh))
             abund(nhe,:) = fhe                       
-
             abund(NEQ-1,:)=gasTemp
             abund(NEQ,:)=density      
-
 
 
         ENDIF
@@ -128,7 +124,6 @@ CONTAINS
             vdiff(i)=VDIFF_PREFACTOR*bindingEnergy(i)/mass(j)
             vdiff(i)=dsqrt(vdiff(i))
         END DO
-
         !h2 formation rate initially set
         ALLOCATE(mantle(points))
         DO l=1,points
@@ -143,7 +138,7 @@ CONTAINS
             ALLOCATE(abstol(NEQ))
         END IF
         !OPTIONS = SET_OPTS(METHOD_FLAG=22, ABSERR_VECTOR=abstol, RELERR=reltol,USER_SUPPLIED_JACOBIAN=.FALSE.)
-        CALL initializeHeating(initialTemp,initialDens,abund(:,1),colDens(dstep),cloudSize)
+        CALL initializeHeating(initialTemp,initialDens,abund(:,1),colDens(dstep),cloudSize,heatWriteFlag)
         IF (columnFlag) write(11,333) specName(outIndx)
         333 format("Time,Density,gasTemp,dustTemp,av,",(999(A,:,',')))
         
@@ -277,7 +272,7 @@ CONTAINS
 
             !Tempdot is only recalculated after change in temperature of 1 degree so we force a calculation here
             IF (heatingFlag) tempDot=getTempDot(abund(NEQ-1,dstep),abund(NEQ,dstep),radfield*EXP(-UV_FAC*av(dstep)),abund(:,dstep),h2dis,h2form,zeta,rate(nR_C_hv),&
-                &1.0/GAS_DUST_DENSITY_RATIO,abund(exoReactants1,dstep),abund(exoReactants2,dstep),RATE(exoReacIdxs),exothermicities,.True.,&
+                &1.0/GAS_DUST_DENSITY_RATIO,abund(exoReactants1,dstep),abund(exoReactants2,dstep),RATE(exoReacIdxs),exothermicities,heatWriteFlag,&
                 &dustTemp(dstep),turbVel,metallicity)
 
             !Call the integrator.
@@ -350,7 +345,7 @@ CONTAINS
             IF (ABS(y(NEQ-1)-oldTemp).gt.1) THEN
                 ! write(*,*) "recalc!"
                 tempDot=getTempDot(Y(NEQ-1),Y(NEQ),radfield*EXP(-UV_FAC*av(dstep)),Y,h2dis,h2form,zeta,rate(nR_C_hv),1.0/GAS_DUST_DENSITY_RATIO&
-                    &,y(exoReactants1),y(exoReactants2),RATE(exoReacIdxs),exothermicities,.False.,dustTemp(dstep),turbVel,metallicity)
+                    &,y(exoReactants1),y(exoReactants2),RATE(exoReacIdxs),exothermicities,heatWriteFlag,dustTemp(dstep),turbVel,metallicity)
                 oldTemp=y(NEQ-1)
             END IF
             ydot(NEQ-1)=tempDot

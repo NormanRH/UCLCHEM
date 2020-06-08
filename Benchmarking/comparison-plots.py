@@ -2,7 +2,7 @@ from plotting_functions import *
 
 base_path = 'Benchmarking/'
 
-for radfield in ["10_linear_decrease"]:
+for radfield in ["low_metallicity","10_linear_increase","10_linear_decrease","10_1e5.5","1e5_1e5.5","10_1e3","1e5_1e3","high_cr","low_rad","sine"]:
 	
 	uclpdr_df=pd.read_csv(f"{base_path}uclpdr/{radfield}_output.csv")
 	uclchem_df=pd.read_csv(f"{base_path}uclchem/{radfield}.csv")

@@ -1,0 +1,2 @@
+columnFile,outputFile,finalTime,outSpecies,heatingFlag,heatWriteFlag,avFactor,initialTemp,initialDens,radfield,zeta,metallicity,coldens,ccol,h2col,rout,ion,model
+Dimensionality/raw/1000.dat,Dimensionality/raw/1000_full.dat,1000000.0,12,True,False,6.289e-22,371.842957277152,454496.596800096,30.15621301384447,31510.830859801044,0.004699012965709909,3.209912659765054e+22,5.866296259832882e+17,1.1106003061199834e+16,7.062566985901744e+16,0,1000

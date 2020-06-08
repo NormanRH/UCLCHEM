@@ -1,3 +1,4 @@
+
 SUBROUTINE GENERAL(dictionary, outSpeciesIn,results_dir,model_no)
     USE physics
     USE chemistry
@@ -12,9 +13,7 @@ SUBROUTINE GENERAL(dictionary, outSpeciesIn,results_dir,model_no)
     close(11)
     close(7)
 
-    ! open(15,file=results_dir//"cooling/"//model_no//".dat",status="unknown")
-    ! open(16,file=results_dir//"heating/"//model_no//".dat",status="unknown")
-
+    
     IF (scan(dictionary, 'columnFile') .EQ. 0) THEN
         columnFlag=.False.
     END IF
@@ -38,6 +37,8 @@ SUBROUTINE GENERAL(dictionary, outSpeciesIn,results_dir,model_no)
         dictionary = dictionary(posEnd:)
 
         SELECT CASE (inputParameter)
+            CASE('heatWriteFlag')
+                READ(inputValue,*) heatWriteFlag
             CASE('metallicity') 
                 READ(inputValue,*) metallicity
             CASE('avFactor')
@@ -189,6 +190,11 @@ SUBROUTINE GENERAL(dictionary, outSpeciesIn,results_dir,model_no)
         END SELECT
     END DO
 
+
+    if (heatWriteFlag) open(15,file=results_dir//"cooling/"//model_no//".dat",status="unknown")
+    if (heatWriteFlag) open(16,file=results_dir//"heating/"//model_no//".dat",status="unknown")
+
+
     dstep=1
     currentTime=0.0
     timeInYears=0.0
@@ -198,7 +204,6 @@ SUBROUTINE GENERAL(dictionary, outSpeciesIn,results_dir,model_no)
     colDens=colDensIn
 
     CALL initializeChemistry
-    write(*,*) metallicity
     !loop until the end condition of the model is reached
     DO WHILE ((switch .eq. 1 .and. density(1) < finalDens) .or. (switch .eq. 0 .and. timeInYears < finalTime))
 
@@ -212,6 +217,7 @@ SUBROUTINE GENERAL(dictionary, outSpeciesIn,results_dir,model_no)
 
         !loop over parcels, counting from centre out to edge of cloud
         DO dstep=1,points
+            !if (timeInYears .gt. 1000) heatingFlag=.True.
             !update chemistry
             CALL updateChemistry
 
@@ -233,14 +239,271 @@ SUBROUTINE GENERAL(dictionary, outSpeciesIn,results_dir,model_no)
     tempDot=getTempDot(abund(NEQ-1,dstep),abund(NEQ,dstep),radfield*EXP(-UV_FAC*av(dstep))&
         &,abund(:,dstep),h2dis,h2form,zeta,rate(nR_C_hv),&
                 &1.0/GAS_DUST_DENSITY_RATIO,abund(exoReactants1,dstep),&
-                &abund(exoReactants2,dstep),RATE(exoReacIdxs),exothermicities,.True.,&
+                &abund(exoReactants2,dstep),RATE(exoReacIdxs),exothermicities,heatWriteFlag,&
                 &dustTemp(dstep),turbVel,metallicity)
     CLOSE(10)
     CLOSE(11)
     CLOSE(7)
-    CLOSE(15)
-    CLOSE(16)
+    if (heatWriteFlag) CLOSE(15)
+    if (heatWriteFlag) CLOSE(16)
 END SUBROUTINE GENERAL
+
+SUBROUTINE Sampler(dictionary, outSpeciesIn,results_dir,&
+    &model_no,abundances_in,abundances_out,dust_temp)
+    USE physics
+    USE chemistry
+    IMPLICIT NONE
+    CHARACTER(LEN=*) :: dictionary, outSpeciesIn,results_dir,model_no
+    double precision :: abundances_in(215),abundances_out(217),dust_temp
+    CHARACTER (LEN=100) :: abundFile, outputFile, columnFile, outFile
+    INTEGER :: posStart, posEnd, whileInteger
+    CHARACTER(LEN=100) :: inputParameter, inputValue
+    REAL(dp) :: colDensIn
+!f2py intent(in) dictionary, outSpeciesIn,results_dir,model_no,abundances_in
+!f2py intent(out) abundances_out,dust_temp
+
+    include 'defaultparameters.f90'
+    close(10)
+    close(11)
+    close(7)
+
+
+    IF (scan(dictionary, 'columnFile') .EQ. 0) THEN
+        columnFlag=.False.
+    END IF
+
+    whileInteger = 0
+
+    posStart = scan(dictionary, '{')
+
+    DO WHILE (whileInteger .NE. 1)
+        posEnd = scan(dictionary, ':')
+        inputParameter = dictionary(posStart+2:posEnd-2)
+        dictionary = dictionary(posEnd:)
+        posStart = scan(dictionary, ' ')
+        IF (scan(dictionary, ',') .EQ. 0) THEN
+            posEnd = scan(dictionary, '}')
+            whileInteger = 1
+        ELSE
+            posEnd = scan(dictionary, ',')
+        END IF
+        inputValue = dictionary(posStart+1:posEnd-1)
+        dictionary = dictionary(posEnd:)
+
+        SELECT CASE (inputParameter)
+            CASE('heatWriteFlag')
+                READ(inputValue,*) heatWriteFlag
+            CASE('metallicity') 
+                READ(inputValue,*) metallicity
+            CASE('avFactor')
+                READ(inputValue,*) avFactor
+            CASE('heatingFlag') 
+                READ(inputValue,*) heatingFlag
+            CASE('h2col') 
+                READ(inputValue,*) h2col
+            CASE('ccol') 
+                READ(inputValue,*) ccol
+            CASE('coldens') 
+                READ(inputValue,*) colDensIn
+            CASE('initialTemp')
+                READ(inputValue,*) initialTemp
+            CASE('maxTemp')
+                READ(inputValue,*) maxTemp
+            CASE('initialDens')
+                READ(inputValue,*) initialDens
+            CASE('finalDens')
+                READ(inputValue,*) finalDens
+            CASE('currentTime')
+                READ(inputValue,*) currentTime
+            CASE('finalTime')
+                READ(inputValue,*) finalTime
+            CASE('radfield')
+                READ(inputValue,*) radfield
+            CASE('zeta')
+                READ(inputValue,*) zeta
+            CASE('fr')
+                READ(inputValue,*) fr
+            CASE('rout')
+                READ(inputValue,*) rout
+            CASE('rin')
+                READ(inputValue,*) rin
+            CASE('baseAv')
+                READ(inputValue,*) baseAv
+            CASE('points')
+                READ(inputValue,*) points
+            CASE('switch')
+                Read(inputValue,*) switch
+            CASE('collapse')
+                READ(inputValue,*) collapse
+            CASE('bc')
+                READ(inputValue,*) bc
+            CASE('readAbunds')
+                READ(inputValue,*) readAbunds
+            CASE('phase')
+                READ(inputValue,*) phase
+            CASE('desorb')
+                READ(inputValue,*) desorb
+            CASE('h2desorb')
+                READ(inputValue,*) h2desorb
+            CASE('crdesorb')
+                READ(inputValue,*) crdesorb
+            CASE('uvcr')
+                READ(inputValue,*) uvcr
+            CASE('instantSublimation')
+                READ(inputValue,*) instantSublimation
+            CASE('ion')
+                READ(inputValue,*) ion
+            CASE('tempindx')
+                READ(inputValue,*) tempindx
+            CASE('fh')
+                READ(inputValue,*) fh
+            CASE('fhe')
+                READ(inputValue,*) fhe
+            CASE('fc')
+                READ(inputValue,*) fc
+            CASE('fo')
+                READ(inputValue,*) fo
+            CASE('fn')
+                READ(inputValue,*) fn
+            CASE('fs')
+                READ(inputValue,*) fs
+            CASE('fmg')
+                READ(inputValue,*) fmg
+            CASE('fsi')
+                READ(inputValue,*) fsi
+            CASE('fcl')
+                READ(inputValue,*) fcl
+            CASE('fp')
+                READ(inputValue,*) fp
+            CASE('ff')
+                READ(inputValue,*) ff
+            CASE('outSpecies')
+                IF (ALLOCATED(outIndx)) DEALLOCATE(outIndx)
+                IF (ALLOCATED(outSpecies)) DEALLOCATE(outSpecies)
+                READ(inputValue,*) nout
+                ALLOCATE(outIndx(nout))
+                ALLOCATE(outSpecies(nout))
+                IF (outSpeciesIn .eq. "") THEN
+                    write(*,*) "Outspecies parameter set but no outspecies string given"
+                    write(*,*) "general(parameter_dict,outSpeciesIn) requires a delimited string of species names"
+                    write(*,*) "if outSpecies or columnFlag is set in the parameter dictionary"
+                    STOP
+                ELSE
+                    READ(outSpeciesIn,*, END=22) outSpecies
+                    IF (outSpeciesIn .eq. "") THEN
+22                      write(*,*) "mismatch between outSpeciesIn and number given in dictionary"
+                        write(*,*) "Number:",nout
+                        write(*,*) "Species list:",outSpeciesIn
+                        STOP
+                    END IF
+                END IF
+            CASE('writeStep')
+                READ(inputValue,*) writeStep
+            CASE('ebmaxh2')
+                READ(inputValue,*) ebmaxh2
+            CASE('epsilon')
+                READ(inputValue,*) epsilon
+            CASE('ebmaxcrf')
+                READ(inputValue,*) ebmaxcrf
+            CASE('uvcreff')
+                READ(inputValue,*) uvcreff
+            CASE('ebmaxcr')
+                READ(inputValue,*) ebmaxcr
+            CASE('phi')
+                READ(inputValue,*) phi
+            CASE('ebmaxuvcr')
+                READ(inputValue,*) ebmaxuvcr
+            CASE('uv_yield')
+                READ(inputValue,*) uv_yield
+            CASE('omega')
+                READ(inputValue,*) omega
+            CASE('vs')
+                READ(inputValue,*) vs
+            CASE('abundFile')
+                READ(inputValue,*) abundFile
+                abundFile = trim(abundFile)
+                open(7,file=abundFile,status='unknown')
+            CASE('outputFile')
+                READ(inputValue,*) outFile
+                outputFile = trim(outFile)
+                open(10,file=outputFile,status='unknown')
+            CASE('columnFile')
+                IF (trim(outSpeciesIn) .NE. '' ) THEN
+                    READ(inputValue,*) columnFile
+                    columnFile = trim(columnFile)
+                    columnFlag=.True.
+                    open(11,file=columnFile,status='unknown')
+                ELSEIF (trim(outSpeciesIn) .NE. '' ) THEN
+                    WRITE(*,*) "Error in output species. No species were given but a column file was given."
+                    WRITE(*,*) "columnated output requires output species to be chosen."
+                    STOP
+                END IF
+
+            CASE DEFAULT
+                WRITE(*,*) "Problem with given parameter: '", trim(inputParameter),"'. This is either not supported yet, or invalid"
+        END SELECT
+    END DO
+
+
+    if (heatWriteFlag) open(15,file=results_dir//"cooling/"//model_no//".dat",status="unknown")
+    if (heatWriteFlag) open(16,file=results_dir//"heating/"//model_no//".dat",status="unknown")
+
+
+    dstep=1
+    currentTime=0.0
+    timeInYears=0.0
+
+    CALL initializePhysics
+
+    colDens=colDensIn
+
+    CALL initializeChemistry
+    abund(:nspec,1)=abundances_in
+    !loop until the end condition of the model is reached
+    DO WHILE ((switch .eq. 1 .and. density(1) < finalDens) .or. (switch .eq. 0 .and. timeInYears < finalTime))
+
+        !store current time as starting point for each depth step
+        IF (points .gt. 1) THEN
+            currentTimeold=targetTime
+            currentTime=currentTimeold
+        END IF
+        !Each physics module has a subroutine to set the target time from the current time
+        CALL updateTargetTime
+
+        !loop over parcels, counting from centre out to edge of cloud
+        DO dstep=1,points
+            !if (timeInYears .gt. 1000) heatingFlag=.True.
+            !update chemistry
+            CALL updateChemistry
+
+            !set time to the final time of integrator rather than target
+            targetTime=currentTime
+            !reset target for next depth point
+            if (points .gt. 1)currentTime=currentTimeold
+            !get time in years for output
+            timeInYears= currentTime/SECONDS_PER_YEAR
+            !update physics
+            CALL updatePhysics
+            
+            CALL sublimation(abund)
+            !write this depth step
+            CALL output
+        END DO
+    END DO
+    dstep=1
+    tempDot=getTempDot(abund(NEQ-1,dstep),abund(NEQ,dstep),radfield*EXP(-UV_FAC*av(dstep))&
+        &,abund(:,dstep),h2dis,h2form,zeta,rate(nR_C_hv),&
+                &1.0/GAS_DUST_DENSITY_RATIO,abund(exoReactants1,dstep),&
+                &abund(exoReactants2,dstep),RATE(exoReacIdxs),exothermicities,heatWriteFlag,&
+                &dustTemp(dstep),turbVel,metallicity)
+    CLOSE(10)
+    CLOSE(11)
+    CLOSE(7)
+    if (heatWriteFlag) CLOSE(15)
+    if (heatWriteFlag) CLOSE(16)
+    abundances_out=abund(:,dstep)
+    dust_temp=dustTemp(1)
+END SUBROUTINE Sampler
 
 ! SUBROUTINE equilibrium(dictionary, outSpeciesIn,results_dir,model_no)
 !     USE physics

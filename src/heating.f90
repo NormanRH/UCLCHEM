@@ -9,9 +9,10 @@ IMPLICIT NONE
 
  CONTAINS
 
-    SUBROUTINE initializeHeating(gasTemperature, gasDensity,abundances,columnDensity,cloudSize)
+    SUBROUTINE initializeHeating(gasTemperature, gasDensity,abundances,columnDensity,cloudSize,writeFlag)
         REAL(dp), INTENT(in) :: gasTemperature,gasDensity,columnDensity,cloudSize
         REAL(dp), INTENT(in) :: abundances(:)
+        LOGICAL, INTENT(in) ::writeFlag
         CHARACTER(5) :: coolName
         INTEGER ::i,j
         CALL READ_COOLANTS()
@@ -28,8 +29,8 @@ IMPLICIT NONE
         CLOUD_DENSITY=gasDensity
         cloud_size=cloudSize
 
-        ! write(15,*) "Lyman-alpha C+ O C CO p-H2 o-H2 "
-        ! write(16,*) "Photoelectric H2Formation FUVPumping Photodissociation Cionization CRheating turbHeating Chemheating gasGrainColls"
+        if (writeFlag) write(15,*) "Lyman-alpha,C+,O,C,CO,p-H2,o-H2,SI+,S"
+        if (writeFlag) write(16,*) "Photoelectric,H2Formation,FUVPumping,Photodissociation,Cionization,CRheating,turbHeating,Chemheating,gasGrainColls"
 
         ! coolantIndices(ncool+1)=nspec
         !Here I could find the reactions that give chemical heating and cooling
@@ -53,7 +54,7 @@ IMPLICIT NONE
 
         !then calculate overall heating/cooling rate
         heating=getHeatingRate(gasTemperature,gasDensity,habingField,abundances,h2dis,h2form,zeta,cIonRate,dustAbundance&
-            &,exoReactants1,exoReactants2,exoRates,exothermicities,dustTemp,turbVel,metallicity)
+            &,exoReactants1,exoReactants2,exoRates,exothermicities,dustTemp,turbVel,metallicity,writeFlag)
         !write(*,*) "Total Heating", heating
 
         IF (gasTemperature .gt. 10.0) THEN
@@ -79,10 +80,11 @@ IMPLICIT NONE
 
 
     REAL(dp) FUNCTION getHeatingRate(gasTemperature,gasDensity,habingField,abundances,h2dis,h2form,zeta,cIonRate,dustAbundance&
-                                    &,exoReactants1,exoReactants2,exoRates,exothermicities,dustTemp,turbVel,metallicity)
+                                    &,exoReactants1,exoReactants2,exoRates,exothermicities,dustTemp,turbVel,metallicity,writeFlag)
         REAL(dp), INTENT(in) :: gasTemperature,gasDensity,habingField,h2dis
         REAL(dp), INTENT(in) :: h2form,zeta,cIonRate,dustAbundance,dustTemp,turbVel,metallicity
         REAL(dp), INTENT(IN):: abundances(:),exoReactants1(:),exoReactants2(:),exoRates(:),exothermicities(:)
+        LOGICAL, INTENT(IN) :: writeFlag
         REAL(dp) :: turbHeating,L_TURB=5.0d0
         REAL(dp) :: photoelec,h2forming,fuvpumping,photodis,cionizing,crheating,chemheating,gasgraincolls
 
@@ -107,7 +109,8 @@ IMPLICIT NONE
             !sum all heating types
             getHeatingRate=photoelec+h2forming+fuvpumping+photodis+cionizing+crheating+chemheating+turbHeating+gasgraincolls
             !write to file
-            !write(16,*) photoelec,h2forming,fuvpumping,photodis,cionizing,crheating,turbHeating,chemheating,gasgraincolls
+            IF (writeFlag) write(16,1666) (/photoelec,h2forming,fuvpumping,photodis,cionizing,crheating,turbHeating,chemheating,gasgraincolls/)
+            1666 format((999(1pe15.5,:,',')))
     END FUNCTION getHeatingRate
 
     REAL(dp) FUNCTION getCoolingRate(gasTemperature,gasDensity,dustTemp,abundances,h2dis,turbVel,writeFlag)
@@ -118,27 +121,27 @@ IMPLICIT NONE
         INTEGER :: ti
 
 
-         ! coolingMode=atomicCooling(gasTemperature,gasDensity,abundances(nh),abundances(nhe),&
-         !                         &abundances(nelec),abundances(nhx),abundances(nhex))
+          coolingMode=atomicCooling(gasTemperature,gasDensity,abundances(nh),abundances(nhe),&
+                                  &abundances(nelec),abundances(nhx),abundances(nhex))
          ! ! write(*,*) coolingMode, "atomic"
-         ! getCoolingRate=coolingMode
+          getCoolingRate=coolingMode
 
-         ! coolingMode=collionallyInducedEmission(gasTemperature,gasDensity,abundances(nh2))
+          coolingMode=collionallyInducedEmission(gasTemperature,gasDensity,abundances(nh2))
          ! ! write(*,*) coolingMode, "CIE"
-         ! getCoolingRate=getCoolingRate+coolingMode
+          getCoolingRate=getCoolingRate+coolingMode
         
-         ! coolingMode=comptonCooling(gasTemperature,gasDensity,abundances(nelec))
+          coolingMode=comptonCooling(gasTemperature,gasDensity,abundances(nelec))
          ! ! write(*,*) coolingMode, "Compton"
-         ! getCoolingRate=getCoolingRate+coolingMode
+          getCoolingRate=getCoolingRate+coolingMode
 
-         ! coolingMode=continuumEmission(gasTemperature,gasDensity)
+          coolingMode=continuumEmission(gasTemperature,gasDensity)
          ! ! write(*,*) coolingMode, "Continuum"
-         ! getCoolingRate=getCoolingRate+coolingMode
+          getCoolingRate=getCoolingRate+coolingMode
 
-         ! coolingMode=H2VibrationalCooling(gasTemperature,gasDensity,abundances(nh2),h2dis)
+          coolingMode=H2VibrationalCooling(gasTemperature,gasDensity,abundances(nh2),h2dis)
          ! ! write(*,*) coolingMode, "H2 Vibrational"
-         ! getCoolingRate=getCoolingRate+coolingMode
-        getCoolingRate=0.0D0
+          getCoolingRate=getCoolingRate+coolingMode
+        !getCoolingRate=0.0D0
         DO ti=1,5
             coolings(ti)=lineCooling(gasTemperature,gasDensity,dustTemp,abundances,turbVel,writeFlag)
         END DO
@@ -198,7 +201,6 @@ IMPLICIT NONE
         !Calculate the cooling rates
         lineCooling=0.0
         DO N=1,NCOOL
-          IF (N .eq. 6) write(33,*) 
             WHERE(coolants(N)%EMISSIVITY .lt. -HUGE(1.0)) coolants(N)%EMISSIVITY = 0.0
             moleculeCooling(N)=SUM(coolants(N)%EMISSIVITY,MASK=.NOT.ISNAN(coolants(N)%EMISSIVITY))
 
@@ -213,7 +215,8 @@ IMPLICIT NONE
             !IF (moleculeCooling(N) .gt. -1.0d-30 .and. abundances(coolantIndices(N)) .gt. 1.0d-20) 
             lineCooling= lineCooling+moleculeCooling(N)
         END DO
-        !IF (writeFlag) write(15,*) moleculeCooling
+        IF (writeFlag) write(15,1666) moleculeCooling
+        1666 format((999(1pe15.5,:,',')))
         !!write(*,*) lineCooling
     END FUNCTION lineCooling
 

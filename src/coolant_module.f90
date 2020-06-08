@@ -41,10 +41,10 @@ MODULE COOLANT_MODULE
 
 
    TYPE(COOLANT_TYPE), allocatable :: coolants(:)
-   integer,PARAMETER :: NCOOL=7
+   integer,PARAMETER :: NCOOL=9
    CHARACTER(*), PARAMETER :: coolantFiles(NCOOL)=(/"ly-a.dat       ","12c+_nometa.dat","16o.dat        ","12c.dat        ",&
-            &"12co.dat       ","p-h2.dat       ","o-h2.dat       "/)
-   CHARACTER(*), PARAMETER :: coolantNames(NCOOL)=(/"H   ","C+  ","O   ","C   ","CO  ","p-H2","o-H2"/)
+            &"12co.dat       ","p-h2.dat       ","o-h2.dat       ","28si+.dat      ","32s.dat        "/)
+   CHARACTER(*), PARAMETER :: coolantNames(NCOOL)=(/"H   ","C+  ","O   ","C   ","CO  ","p-H2","o-H2","SI+ ","S   "/)
    ! CHARACTER(*), PARAMETER :: coolantFiles(NCOOL)=(/"12co.dat       ","p-h2.dat       ","o-h2.dat       ","p-h2o.dat      ","o-h2o.dat      "/)
    ! CHARACTER(*), PARAMETER :: coolantNames(NCOOL)=(/"CO ","H2 ","H2 ","H2O","H2O"/)
    INTEGER :: coolantIndices(NCOOL)

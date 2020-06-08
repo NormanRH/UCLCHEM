@@ -27,7 +27,7 @@ IMPLICIT NONE
 
     !Set up with initial values. For chemistry this is setting initial abundances and assigning memory for ODE solver
     CALL initializePhysics
-
+    write(*,*) "p"
     gastemp=600.0
     ccol= 18058765988.12
     h2col=9205561518560.0
@@ -36,6 +36,7 @@ IMPLICIT NONE
     cloudSize=2000000000.0
     close(10)
     CALL initializeChemistry
+    write(*,*) "initialized"
     !loop until the end condition of the model is reached 
     DO WHILE ((switch .eq. 1 .and. density(1) < finalDens) .or. (switch .eq. 0 .and. timeInYears < finalTime))
         !store current time as starting point for each depth step
@@ -53,7 +54,6 @@ IMPLICIT NONE
             currentTime=targetTime
             !get time in years for output, currentTime is now equal to targetTime
             timeInYears= currentTime/SECONDS_PER_YEAR
-            write(*,*) timeInYears,gastemp(dstep)
             !Update physics so it's correct for new currentTime and start of next time step
             CALL updatePhysics
             !Sublimation checks if Sublimation should happen this time step and does it

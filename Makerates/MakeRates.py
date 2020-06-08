@@ -12,10 +12,10 @@ import os
 
 #for the reduced network use the following files
 #and make sure reactionList=reactions2 rather than reactions1+reactions2 below
-#reactionFile = 'inputFiles/umist12-uclpdredit.csv'
-#reactionFile_grain = 'inputFiles/uclpdr-network.csv'
-#speciesFile = 'inputFiles/uclpdrspecies.csv'
-#therm_flag=False
+# reactionFile = 'inputFiles/umist12-uclpdredit.csv'
+# reactionFile_grain = 'inputFiles/uclpdr-network.csv'
+# speciesFile = 'inputFiles/uclpdrspecies.csv'
+# therm_flag=False
 
 reactionFile = 'inputFiles/umist12-uclpdredit.csv'
 reactionFile_grain = 'inputFiles/uclgrainbasic.csv'

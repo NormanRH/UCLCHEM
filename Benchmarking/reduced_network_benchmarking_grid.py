@@ -8,8 +8,8 @@ from os import path,mkdir
 def run_model(a):
 	i,cloud_size,h2_col,c_col,col_dens,model_type,rad_field,init_temp,dens,heating_flag,av_factor,zeta,metallicity=a
 	params={
-		"columnFile":f"Benchmarking/raw/{model_type}/av_grid/{i:.0f}.dat",
-		"outputFile":f"Benchmarking/raw/{model_type}/av_grid/{i:.0f}_full.dat",
+		"columnFile":f"Benchmarking/reduced-raw/{model_type}/av_grid/{i:.0f}.dat",
+		"outputFile":f"Benchmarking/reduced-raw/{model_type}/av_grid/{i:.0f}_full.dat",
 		"initialTemp":init_temp,
 		"initialDens":dens,
 		"finalTime":2.0e6,
@@ -19,13 +19,24 @@ def run_model(a):
 		"ccol":c_col,
 		"coldens":col_dens,
 		"rout":cloud_size,
+		"fc":1.0e-4,
+		"fhe":0.1,
+		"fh":0.4,
+		"fo":3.0e-4,
+		#"fn":0.0,
+		"fs":0.0,
+		"fcl":0.0,
+		"fsi":0.0,
+		"fmg":5.00e-06,
+		"ion":2,
 		"zeta":zeta,
+		"fr":0.0,
 		"metallicity":metallicity,
 		"heatingFlag":heating_flag,
 		"avFactor":av_factor}	
 
 	outSpecies="H2O,H2,H,H+,HE+,C,C+,O,O+,CO,CO+,E-"
-	uclchem.general(params,outSpecies,f"Benchmarking/raw/{model_type}/av_grid/",f"{i:.0f}")
+	uclchem.general(params,outSpecies,f"Benchmarking/reduced-raw/{model_type}/av_grid/",f"{i:.0f}")
 	return 1
 
 if __name__ == '__main__':
@@ -61,10 +72,10 @@ if __name__ == '__main__':
 	}
 
 
-	for model_type in ["low_metallicity"]:
+	for model_type in ["low_rad"]:
 		fixed=("low_rad_fixed" in model_type)
 		low_metallicity= (model_type=="low_metallicity")
-		base_path=f"Benchmarking/raw/{model_type}/"
+		base_path=f"Benchmarking/reduced-raw/{model_type}/"
 		if not path.exists(base_path):
 			mkdir(base_path)
 
@@ -110,7 +121,7 @@ if __name__ == '__main__':
 				f.write(f"{i},{cloud_size},{av},{h2_col},{c_col},{col_dens}\n")
 
 	start=time.time()
-	pool=Pool(2)
+	pool=Pool(24)
 	print("mapping...")
 	rel=pool.map(run_model,models)
 	print(rel)
