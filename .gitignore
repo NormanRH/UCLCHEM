@@ -3,7 +3,7 @@ output/
 *.dat
 *.png
 *.out
-.csv
+*.csv
 Benchmarking/uclpdr/
 #no compiled files
 *.pyc
