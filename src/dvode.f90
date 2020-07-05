@@ -15884,7 +15884,8 @@
 !             Has node iw been on stack already?
               IF (NUMB(IW)==0) GOTO 70
 !             Update value of LOWL(IV) if necessary.
-20          LOWL(IV) = MIN(LOWL(IV),LOWL(IW))
+              LOWL(IV) = MIN(LOWL(IV),LOWL(IW))
+20	    CONTINUE
 
 !           There are no more edges leaving node IV.
             ARP(IV) = -1
@@ -16005,7 +16006,8 @@
 !           It does. Copy into current entry.
             ACE = ACEP
             ICE = ICEP
-40        JCE = JCEP + JDISP
+            JCE = JCEP + JDISP
+40	  CONTINUE
 
 50      END DO
 
@@ -16258,7 +16260,8 @@
           IW(IOLD,1) = IW(IOLD,1) - JJ
           J2 = JJ + LENGTH - 1
           DO 20 J = JJ, J2
-20        IW1(J) = IOLD
+            IW1(J) = IOLD
+20	  CONTINUE
           JJ = J2 + 1
 30      END DO
 !       Set inverse permutation to IQ in IW(:,2).
@@ -16454,7 +16457,8 @@
             IBEG = LICN + 1
 !           Reset pointers to the beginning of the rows.
             DO 100 I = 2, N
-100         IW1(I,1) = IW1(I-1,1) + LENOFF(I-1)
+              IW1(I,1) = IW1(I-1,1) + LENOFF(I-1)
+100	    CONTINUE
 
 !           Row IOLD is now split into diagonal and off-diagonal parts.
 110         IROWB = IW1(IOLD,1)
@@ -16555,7 +16559,8 @@
           J1 = J0 + LENRL(I) - 1
           WROWL = ZERO
           DO 20 JJ = J0, J1
-20        WROWL = WROWL + ABS(A(JJ))
+            WROWL = WROWL + ABS(A(JJ))
+20	  CONTINUE
 !         AMAXL is the maximum norm of columns of L so far found.
           AMAXL = MAX(AMAXL,WROWL)
           J0 = J1 + 1
@@ -16564,7 +16569,8 @@
           IF (J0>J2) GOTO 50
           DO 40 JJ = J0, J2
             J = ICN(JJ)
-40        W(J) = MAX(ABS(A(JJ)),W(J))
+            W(J) = MAX(ABS(A(JJ)),W(J))
+40	  CONTINUE
 50        J0 = J2 + 1
 60      END DO
 !       AMAXU is set to maximum max-norm of columns of U.
