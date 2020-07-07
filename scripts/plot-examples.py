@@ -12,7 +12,7 @@ for folder in ["example-output/","test-output/"]:
 		speciesNames=["CO","CS","H2O","#CO","#CH3OH","NH3"]
 
 		#call read_uclchem. 
-		time,dens,temp,abundances=read_uclchem("examples/"+folder+model+"-full.dat",speciesNames)
+		time,dens,temp,abundances=read_uclchem("../examples/"+folder+model+"-full.dat",speciesNames)
 
 
 		#plot species and save to test.png, alternatively send dens instead of time.
@@ -24,5 +24,5 @@ for folder in ["example-output/","test-output/"]:
 		i=i+1
 axes[0].text(.02,0.98,"Example Row",horizontalalignment="left",verticalalignment="top",transform=axes[0].transAxes)
 axes[3].text(.02,0.98,"Your Row",horizontalalignment="left",verticalalignment="top",transform=axes[3].transAxes)
-fig.savefig("examples/example-comparisons.png",dpi=300)
+fig.savefig("../examples/example-comparisons.png",dpi=300)
 
