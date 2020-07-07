@@ -1,0 +1,22 @@
+initialTemp 10.0
+initialDens 1.00d4
+finalDens 1.00d4
+finalTime 5.00d6
+switch 0
+collapse 0
+readAbunds 0
+phase 1
+outSpecies 4 OCS CO CS CH3OH
+writeStep 1
+fc 2.6d-04
+fo 4.6d-04
+fn 6.1d-09
+fs 1.318d-05
+fmg 3.981d-05
+fsi 1.8d-07
+fcl 3.162d-07
+fp 2.57d-09
+ff 3.6d-08
+abundFile "examples/test-output/startstatic.dat"
+outputFile "examples/test-output/static-full.dat"
+columnFile "examples/test-output/static-column.dat"

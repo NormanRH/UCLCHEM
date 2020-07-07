@@ -67,22 +67,31 @@ IF (paramFile .ne. "") THEN
                 READ(buffer,*,iostat=ios) fhe
             CASE('fc')
                 READ(buffer,*,iostat=ios) fc
+                WRITE(*,*) "fc=", fc
             CASE('fo')
                 READ(buffer,*,iostat=ios) fo
+                WRITE(*,*) "fo=", fo
             CASE('fn')
                 READ(buffer,*,iostat=ios) fn
+                WRITE(*,*) "fn=", fn
             CASE('fs')
                 READ(buffer,*,iostat=ios) fs
+                WRITE(*,*) "fs=", fs
             CASE('fmg')
                 READ(buffer,*,iostat=ios) fmg
+                WRITE(*,*) "fmg=", fmg
             CASE('fsi')
                 READ(buffer,*,iostat=ios) fsi
-            CASE('fcl')
+                WRITE(*,*) "fsi=", fsi
+           CASE('fcl')
                 READ(buffer,*,iostat=ios) fcl
+                WRITE(*,*) "fcl=", fcl
             CASE('fp')
                 READ(buffer,*,iostat=ios) fp
+                WRITE(*,*) "fp=", fp
             CASE('ff')
                 READ(buffer,*,iostat=ios) ff
+                WRITE(*,*) "ff=", ff
             CASE('outSpecies')
                 pos = scan(buffer, ' ')
                 READ(buffer(1:pos),*,iostat=ios) readIndx
