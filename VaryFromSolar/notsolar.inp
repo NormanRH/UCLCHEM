@@ -5,7 +5,6 @@ switch 1
 collapse 1
 readAbunds 0
 phase 1
-outSpecies 4 OCS CO CS CH3OH
 writeStep 1
 fc 2.6d-04
 fo 4.6d-04
@@ -16,6 +15,6 @@ fsi 1.8d-07
 fcl 3.162d-07
 fp 2.57d-09
 ff 3.6d-08
-abundFile "examples/test-output/startcollapse.dat"
-outputFile "examples/test-output/phase1-full.dat"
-columnFile "examples/test-output/phase1-column.dat"
+abundFile "VaryFromSolar/intermediatefiles/startcollapse.dat"
+outputFile "VaryFromSolar/outputfiles/phase1-full.dat"
+
