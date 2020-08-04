@@ -55,7 +55,7 @@ ParameterDictP1 = {"phase": 1, "switch": 0, "collapse": 0, "readAbunds": 0, "wri
                        "initialDens": 1e2,
                        "finalDens":1.0e5,
                        "baseAv":10}
-#Phase2 after teh above we continue the chemistry of collapse
+#Phase2 after the above we continue the chemistry of collapse
 ParameterDictP2 = {"phase": 2, "switch": 0, "collapse": 0, "readAbunds": 1, #"writeStep": 1,
                        "tempindx": 1,
                        "fr": 0.0,
@@ -78,7 +78,7 @@ ParameterDictP2 = {"phase": 2, "switch": 0, "collapse": 0, "readAbunds": 1, #"wr
 elements=[["C","fc",2.6e-04], ["N","fn",6.1e-05], ["O","fo",4.6e-04], ["S","fs",1.318e-05],
            ["Mg","fmg",3.981e-05], ["Si","fsi",1.0e-07],["Cl","fcl",3.162e-07],["F","ff",3.6e-08]]
 
-varyfactor = [0.25, 0.5, 1, 2, 4]
+varyfactor = [0.25, 0.5, 1, 2, 4]#1 is the control
 # here we just combine various initial and final densities into an easily iterable array
 #initialTempGrid = np.linspace(50, 300, 6)
 #crgrid = np.logspace(1, 5, 5)
@@ -97,6 +97,8 @@ models2=[]
 #we'll number our models so store the parameters we used in a list
 for k, e in enumerate(elements):
     for j , factor in enumerate(varyfactor):
+        if factor == 1:
+            continue #1 is a common nothing changed so do once at the end
         paramDict1=ParameterDictP1.copy()
         paramDict2=ParameterDictP2.copy()
         paramDict1[e[1]] = e[2] * factor
@@ -111,6 +113,20 @@ for k, e in enumerate(elements):
         models.append(paramDict1)
         models2.append(paramDict2)
 
+#Control run with no deviation
+paramDict1=ParameterDictP1.copy()
+paramDict2=ParameterDictP2.copy()
+abundfile= intermediatepath + "startcollapseCtrl.dat"
+paramDict1["abundFile"] = abundfile
+paramDict2["abundFile"] = abundfile #feed into phase 2 from phase1
+paramDict1["outputFile"]= outputpath + "phase1-fullCtrl.dat"
+paramDict2["outputFile"]= outputpath + "phase2-fullCtrl.dat"
+paramDict1["columnFile"]= columnpath + "phase1-columnCtrl.dat"
+paramDict2["columnFile"]= columnpath + "phase2-columnCtrl.dat"
+#paramDict["zeta"] = parameterSpace[1,k]
+models.append(paramDict1)
+models2.append(paramDict2)
+
 m=pd.DataFrame(models)
 m.to_csv("models.csv",index=False)
 #use pool.map to run each dictionary throuh our helper function
@@ -122,11 +138,13 @@ pool.map(run_uclchem,models)
 pool.close()
 pool.join()
 
-#pool = Pool(6)
+pool = Pool(6)
+pool.map(run_uclchem,models2)
+
 #result2=pool.map(run_uclchem,models2)
 #result2 = np.asarray(result2)
-#pool.close()
-#pool.join()
+pool.close()
+pool.join()
 
 #df=pd.DataFrame({#"Element":elements[0,:],"Mult":varyfactor[:],
 #                "SO":result[:,0],"H3O+":result[:,1],"NH3":result[:,2],"HNC":result[:,3]})
