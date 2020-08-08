@@ -41,7 +41,7 @@ columnpath = "../VaryFromSolar/columnfiles/"
 #problem of choice of species and keeping track, need representative set of species but can we get 
 #UCLChem to write files for susequent analysis we really want to output the 
 #Start with this set as a static model and ignore a phase 2
-ParameterDictP1 = {"phase": 1, "switch": 0, "collapse": 0, "readAbunds": 0, "writeStep": 1,#"fn": 6.1e-9,
+ParameterDictP1 = {"phase": 1, "switch": 0, "collapse": 1, "readAbunds": 0, "writeStep": 1,#"fn": 6.1e-9,
                        "outSpecies": 'SO SO2 S2 N NH NH2 NH3 HNC NO NO2 OCN HNCO HCS O2 H2O',
                        "fc":2.6e-04,
                        "fn":6.1e-05,
@@ -57,7 +57,7 @@ ParameterDictP1 = {"phase": 1, "switch": 0, "collapse": 0, "readAbunds": 0, "wri
                        "baseAv":10}
 #Phase2 after the above we continue the chemistry of collapse
 ParameterDictP2 = {"phase": 2, "switch": 0, "collapse": 0, "readAbunds": 1, #"writeStep": 1,
-                       "tempindx": 1,
+                       "tempindx": 3,
                        "fr": 0.0,
                        "outSpecies": 'SO SO2 S2 N NH NH2 NH3 HNC NO NO2 OCN HNCO HCS O2 H2O',
                        "fc":2.6e-04,
@@ -70,6 +70,25 @@ ParameterDictP2 = {"phase": 2, "switch": 0, "collapse": 0, "readAbunds": 1, #"wr
                        "ff":3.6e-08,
                        "initialTemp": 10.0,
                        "initialDens": 1.0e5,
+                       "finalTime":2.0e6,
+                       "baseAv":10}
+
+#Static model
+ParameterDictP3 = {"phase": 1, "switch": 0, "collapse": 0, "readAbunds": 0, "writeStep": 1,
+                       "tempindx": 1,
+                       "fr": 0.0,
+                       "outSpecies": 'SO SO2 S2 N NH NH2 NH3 HNC NO NO2 OCN HNCO HCS O2 H2O',
+                       "fc":2.6e-04,
+                       "fn":6.1e-05,
+                       "fo":4.6e-04,
+                       "fs":1.318e-05,
+                       "fmg":3.981e-05,
+                       "fsi":1.0e-07,
+                       "fcl":3.162e-07,
+                       "ff":3.6e-08,
+                       "initialTemp": 10.0,
+                       "initialDens": 1.0e4,
+                       "finalDens": 1.0e4,
                        "finalTime":2.0e6,
                        "baseAv":10}
 
@@ -93,6 +112,7 @@ e.to_csv("elements.csv",index=False)
 #however, to use Pool we just store dictionaries for now
 models=[]
 models2=[]
+models3=[]
 
 #we'll number our models so store the parameters we used in a list
 for k, e in enumerate(elements):
@@ -101,31 +121,41 @@ for k, e in enumerate(elements):
             continue #1 is a common nothing changed so do once at the end
         paramDict1=ParameterDictP1.copy()
         paramDict2=ParameterDictP2.copy()
+        paramDict3=ParameterDictP3.copy()
         paramDict1[e[1]] = e[2] * factor
         abundfile= intermediatepath + "startcollapse"+e[0]+ "-" + str(factor).replace('.','_') +".dat"
         paramDict1["abundFile"] = abundfile
         paramDict2["abundFile"] = abundfile #feed into phase 2 from phase1
+        paramDict3["abundFile"] = intermediatepath + "staticabund"+e[0]+ "-" + str(factor).replace('.','_') +".dat"
         paramDict1["outputFile"]= outputpath + "phase1-full"+e[0]+ "-" + str(factor).replace('.','_') +".dat"
         paramDict2["outputFile"]= outputpath + "phase2-full"+e[0] + "-" +str(factor).replace('.','_') +".dat"
+        paramDict3["outputFile"]= outputpath + "static-full"+e[0] + "-" +str(factor).replace('.','_') +".dat"
         paramDict1["columnFile"]= columnpath + "phase1-column"+e[0]+ "-" + str(factor).replace('.','_')+".dat"
         paramDict2["columnFile"]= columnpath + "phase2-column"+e[0] + "-" +str(factor).replace('.','_')+".dat"
+        paramDict3["columnFile"]= columnpath + "static-column"+e[0] + "-" +str(factor).replace('.','_')+".dat"
         #paramDict["zeta"] = parameterSpace[1,k]
         models.append(paramDict1)
         models2.append(paramDict2)
+        models3.append(paramDict3)
 
 #Control run with no deviation
 paramDict1=ParameterDictP1.copy()
 paramDict2=ParameterDictP2.copy()
+paramDict3=ParameterDictP3.copy()
 abundfile= intermediatepath + "startcollapseCtrl.dat"
 paramDict1["abundFile"] = abundfile
 paramDict2["abundFile"] = abundfile #feed into phase 2 from phase1
+paramDict3["abundFile"] = intermediatepath + "staticCtrl.dat"
 paramDict1["outputFile"]= outputpath + "phase1-fullCtrl.dat"
 paramDict2["outputFile"]= outputpath + "phase2-fullCtrl.dat"
+paramDict3["outputFile"]= outputpath + "static-fullCtrl.dat"
 paramDict1["columnFile"]= columnpath + "phase1-columnCtrl.dat"
 paramDict2["columnFile"]= columnpath + "phase2-columnCtrl.dat"
+paramDict3["columnFile"]= columnpath + "static-columnCtrl.dat"
 #paramDict["zeta"] = parameterSpace[1,k]
 models.append(paramDict1)
 models2.append(paramDict2)
+models3.append(paramDict3)
 
 m=pd.DataFrame(models)
 m.to_csv("models.csv",index=False)
@@ -140,6 +170,15 @@ pool.join()
 
 pool = Pool(6)
 pool.map(run_uclchem,models2)
+
+#result2=pool.map(run_uclchem,models2)
+#result2 = np.asarray(result2)
+pool.close()
+pool.join()
+
+#static model
+pool = Pool(6)
+pool.map(run_uclchem,models3)
 
 #result2=pool.map(run_uclchem,models2)
 #result2 = np.asarray(result2)
