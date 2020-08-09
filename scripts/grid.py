@@ -26,8 +26,8 @@ def run_uclchem(param_dict):
 
 
 #basic set of parameters we'll use for this grid. 
-ParameterDictionary = {"phase": 1, "switch": 0, "collapse": 0, "readAbunds": 0, "writeStep": 1,
-                       "outSpecies": 'SO H3O+', "initialDens": 1e4,"finalTime":2.0e6,"baseAv":10}
+ParameterDictionary = {"phase": 1, "switch": 0, "collapse": 0, "readAbunds": 0, "writeStep": 1,"fn": 6.1e-9,
+                       "outSpecies": 'SO H3O+ NH3 HNC', "initialDens": 1e4,"finalTime":2.0e6,"baseAv":10}
 
 
 # This part can be substituted with any choice of grid
@@ -49,6 +49,8 @@ for k in range(np.shape(parameterSpace)[1]):
     paramDict["zeta"] = parameterSpace[1,k]
     models.append(paramDict)
 
+m=pd.DataFrame(models)
+m.to_csv("models.csv",index=False)
 #use pool.map to run each dictionary throuh our helper function
 start=time.time()
 pool=Pool(6)
@@ -57,7 +59,7 @@ result=np.asarray(result)
 pool.close()
 pool.join()
 df=pd.DataFrame({"Temperature":parameterSpace[0,:],"CR":parameterSpace[1,:],
-                "SO":result[:,0],"H3O+":result[:,1]})
+                "SO":result[:,0],"H3O+":result[:,1],"NH3":result[:,2],"HNC":result[:,3]})
 
 df.to_csv("grid.csv",index=False)
 end=time.time()
