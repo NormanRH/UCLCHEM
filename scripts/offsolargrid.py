@@ -34,14 +34,19 @@ def run_uclchem(param_dict):
     return abunds
 
 #path for output direcoties
-intermediatepath="../VaryFromSolar/intermediatefiles/"
-outputpath = "../VaryFromSolar/outputfiles/"
-columnpath = "../VaryFromSolar/columnfiles/"
+switch=1
+intermediatepath="../VaryFromSolar/intermediatefiles"+str(switch)+"/"
+outputpath = "../VaryFromSolar/outputfiles"+str(switch)+"/"
+columnpath = "../VaryFromSolar/columnfiles"+str(switch)+"/"
 #basic set of parameters we'll use for this grid. 
 #problem of choice of species and keeping track, need representative set of species but can we get 
 #UCLChem to write files for susequent analysis we really want to output the 
 #Start with this set as a static model and ignore a phase 2
-ParameterDictP1 = {"phase": 1, "switch": 0, "collapse": 1, "readAbunds": 0, "writeStep": 1,#"fn": 6.1e-9,
+ParameterDictP1 = {    "phase": 1, 
+                       "switch": switch, 
+                       "collapse": 1, 
+                       "readAbunds": 0, 
+                       "writeStep": 1,#"fn": 6.1e-9,
                        "outSpecies": 'SO SO2 S2 N NH NH2 NH3 HNC NO NO2 OCN HNCO HCS O2 H2O',
                        "fc":2.6e-04,
                        "fn":6.1e-05,
@@ -54,9 +59,13 @@ ParameterDictP1 = {"phase": 1, "switch": 0, "collapse": 1, "readAbunds": 0, "wri
                        "initialTemp": 10.0,
                        "initialDens": 1e2,
                        "finalDens":1.0e5,
+                       "finalTime":1.0e7,#default final time
                        "baseAv":10}
 #Phase2 after the above we continue the chemistry of collapse
-ParameterDictP2 = {"phase": 2, "switch": 0, "collapse": 0, "readAbunds": 1, #"writeStep": 1,
+ParameterDictP2 = {    "phase": 2, 
+                       "switch": 0,#switch, 
+                       "collapse": 0, 
+                       "readAbunds": 1, #"writeStep": 1,
                        "tempindx": 3,
                        "fr": 0.0,
                        "outSpecies": 'SO SO2 S2 N NH NH2 NH3 HNC NO NO2 OCN HNCO HCS O2 H2O',
@@ -74,7 +83,11 @@ ParameterDictP2 = {"phase": 2, "switch": 0, "collapse": 0, "readAbunds": 1, #"wr
                        "baseAv":10}
 
 #Static model
-ParameterDictP3 = {"phase": 1, "switch": 0, "collapse": 0, "readAbunds": 0, "writeStep": 1,
+ParameterDictP3 = {    "phase": 1, 
+                       "switch": 0,#switch,#final Dens here is the same as start so need to run for time 
+                       "collapse": 0, 
+                       "readAbunds": 0, 
+                       "writeStep": 1,
                        "tempindx": 1,
                        "fr": 0.0,
                        "outSpecies": 'SO SO2 S2 N NH NH2 NH3 HNC NO NO2 OCN HNCO HCS O2 H2O',
@@ -89,7 +102,7 @@ ParameterDictP3 = {"phase": 1, "switch": 0, "collapse": 0, "readAbunds": 0, "wri
                        "initialTemp": 10.0,
                        "initialDens": 1.0e4,
                        "finalDens": 1.0e4,
-                       "finalTime":2.0e6,
+                       "finalTime":1.0e8,
                        "baseAv":10}
 
 #Element ids and initial values
@@ -122,10 +135,11 @@ for k, e in enumerate(elements):
         paramDict1=ParameterDictP1.copy()
         paramDict2=ParameterDictP2.copy()
         paramDict3=ParameterDictP3.copy()
-        paramDict1[e[1]] = e[2] * factor
+        paramDict1[e[1]] = e[2] * factor #only change the element we are running for now
         abundfile= intermediatepath + "startcollapse"+e[0]+ "-" + str(factor).replace('.','_') +".dat"
         paramDict1["abundFile"] = abundfile
         paramDict2["abundFile"] = abundfile #feed into phase 2 from phase1
+        paramDict3[e[1]] = e[2] * factor
         paramDict3["abundFile"] = intermediatepath + "staticabund"+e[0]+ "-" + str(factor).replace('.','_') +".dat"
         paramDict1["outputFile"]= outputpath + "phase1-full"+e[0]+ "-" + str(factor).replace('.','_') +".dat"
         paramDict2["outputFile"]= outputpath + "phase2-full"+e[0] + "-" +str(factor).replace('.','_') +".dat"
