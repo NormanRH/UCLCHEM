@@ -106,36 +106,49 @@ def write_cols(filename,times,dens,abundances):
 #same as the species input and time/abundance output from read_uclchem
 #optionally send an output filename to save the plot
 #return ax,figure for further manipulation
-def plot_species(species,times,abundances,ax=None,plotFile=None,ls=None):
+def plot_species(species,times,abundances,ax=None,plotFile=None,ls=None,lab=True,lw=1.5,ncol=None):
     if ax is None:
         fig,ax=plt.subplots()
-    colours=make_colours(len(species))
+    if ncol == None or ncol < len(species):
+        colours=make_colours(len(species))
+    else:
+        colours = make_colours(ncol)
     
     if ls is None:
         ls = "solid"
         
+    rtist = None
+    if lab:
+        for specIndx,specName in enumerate(species):
+            if len(abundances[specIndx]) > 0 :
+                rtist = ax.plot(times,abundances[specIndx],color=next(colours),label=specName,linestyle=ls,linewidth=lw)
+            else:
+                print(specName + " has no values")
+    else:
+        for specIndx,specName in enumerate(species):
+            if len(abundances[specIndx]) > 0 :
+                lbl = "_"+specName #ignorable label
+                rtist = ax.plot(times,abundances[specIndx],color=next(colours),label=lbl,linestyle=ls,linewidth=lw)
+            else:
+                print(specName + "has no values")
 
-    for specIndx,specName in enumerate(species):
-        ax.plot(times,abundances[specIndx],color=next(colours),label=specName,linestyle=ls)
 
-    ax.legend(loc=4,fontsize='small')
 
-    ax.set_xlabel('Time / years')
-    ax.set_ylabel("X$_{Species}$")
-
-    ax.set_yscale('log')
 
     if plotFile is not None:
+        ax.legend(loc=4,fontsize='small')
+        ax.set_xlabel('Time / years')
+        ax.set_ylabel("X$_{Species}$")
         fig.savefig(plotFile)
-    return ax
+        ax.set_yscale('log')
+    return ax, rtist #return axis and artist to adjust as needed
     
 
 
 def make_colours(n):
     return iter(cm.rainbow(np.linspace(0, 1, n)))
 
-def make_colours(n):
-    return iter(cm.rainbow(np.linspace(0, 1, n)))
+
 
 def formatSpecies(speciesName):
     speciesName=speciesName.upper()
