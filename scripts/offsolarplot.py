@@ -102,12 +102,12 @@ for m , speciesNames in enumerate(speciesNameLists):
             #axis.legend(loc='best')
             
     
-        axes[0].set(xscale='log',yscale='log',ylim=(1e-18,1e-3),xlim=(1e0,4e6))
+        axes[0].set(xscale='log',yscale='log',ylim=(1e-18,1e-3),xlim=(1e0,timenp[-1]))
         axes[0].set_xlabel('Time / years')
         axes[0].set_ylabel('X/H')
         axes[0].set_title(title+" phase1")
         axes[0].legend(loc='upper left',fontsize='small')
-        axes[1].set(xscale='log',yscale='log',ylim=(1e-18,1e-3),xlim=(4e6,7.2e6))
+        axes[1].set(xscale='log',yscale='log',ylim=(1e-18,1e-3),xlim=(timenp[-1],t[-1]))
         axes[1].set_title("Zoom in on phase 2")
         #axes[1].set_title(title+" phase1")
         #axes[2].set(xscale='log',yscale='log',ylim=(1e-18,1e-3),xlim=(1e2,6e6))
@@ -148,7 +148,7 @@ for m , speciesNames in enumerate(speciesNameLists):
             axis,rtist=pf.plot_species(speciesNames,time3,abundances3,axes,ls=Linestles[j],lab=lb)#ax=axes[i])
           
           		#plot species returns the axis so we can further edit
-            axis.set(xscale='log',yscale='log',ylim=(1e-18,1e-3),xlim=(1e0,6e6))
+            axis.set(xscale='log',yscale='log',ylim=(1e-18,1e-3),xlim=(1e0,time3[-1]))
             axis.set_ylabel('X/H')
             axis.set_xlabel('Time / years')
             axis.set_title(title+" static")

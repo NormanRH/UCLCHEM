@@ -106,10 +106,13 @@ def write_cols(filename,times,dens,abundances):
 #same as the species input and time/abundance output from read_uclchem
 #optionally send an output filename to save the plot
 #return ax,figure for further manipulation
-def plot_species(species,times,abundances,ax=None,plotFile=None,ls=None,lab=True):
+def plot_species(species,times,abundances,ax=None,plotFile=None,ls=None,lab=True,lw=1.5,ncol=None):
     if ax is None:
         fig,ax=plt.subplots()
-    colours=make_colours(len(species))
+    if ncol == None or ncol < len(species):
+        colours=make_colours(len(species))
+    else:
+        colours = make_colours(ncol)
     
     if ls is None:
         ls = "solid"
@@ -117,11 +120,17 @@ def plot_species(species,times,abundances,ax=None,plotFile=None,ls=None,lab=True
     rtist = None
     if lab:
         for specIndx,specName in enumerate(species):
-            rtist = ax.plot(times,abundances[specIndx],color=next(colours),label=specName,linestyle=ls)
+            if len(abundances[specIndx]) > 0 :
+                rtist = ax.plot(times,abundances[specIndx],color=next(colours),label=specName,linestyle=ls,linewidth=lw)
+            else:
+                print(specName + " has no values")
     else:
         for specIndx,specName in enumerate(species):
-            lbl = "_"+specName #ignorable label
-            rtist = ax.plot(times,abundances[specIndx],color=next(colours),label=lbl,linestyle=ls)
+            if len(abundances[specIndx]) > 0 :
+                lbl = "_"+specName #ignorable label
+                rtist = ax.plot(times,abundances[specIndx],color=next(colours),label=lbl,linestyle=ls,linewidth=lw)
+            else:
+                print(specName + "has no values")
 
 
 

@@ -175,14 +175,14 @@ m=pd.DataFrame(models)
 m.to_csv("models.csv",index=False)
 #use pool.map to run each dictionary throuh our helper function
 start=time.time()
-pool=Pool(6)
+pool=Pool(16)
 pool.map(run_uclchem,models)
 #result=pool.map(run_uclchem,models)
 #result=np.asarray(result)
 pool.close()
 pool.join()
 
-pool = Pool(6)
+pool = Pool(16)
 pool.map(run_uclchem,models2)
 
 #result2=pool.map(run_uclchem,models2)
@@ -191,7 +191,7 @@ pool.close()
 pool.join()
 
 #static model
-pool = Pool(6)
+pool = Pool(16)
 pool.map(run_uclchem,models3)
 
 #result2=pool.map(run_uclchem,models2)

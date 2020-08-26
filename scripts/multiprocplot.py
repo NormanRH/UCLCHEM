@@ -7,7 +7,8 @@ Created on Mon Jul 20 21:10:09 2020
 """
 #demonstration of plotfunctions. called from main UCLCHEM directory
 #it reads full UCLCHEM output and saves a plot of the abudances of select species 
-
+import os
+import multiprocessing as mp
 import numpy as np
 import plotfunctions as pf
 #Element ids and initial values
@@ -15,11 +16,16 @@ import plotfunctions as pf
 elements=[["C","fc",2.6e-04], ["N","fn",6.1e-05], ["O","fo",4.6e-04], ["S","fs",1.318e-05],
            ["Mg","fmg",3.981e-05], ["Si","fsi",1.0e-07],["Cl","fcl",3.162e-07],["F","ff",3.6e-08]]
 
+imgsize = {"A7":[(3.5,2),3.0,4.0,4.0,0.5,4],
+           "A6":[(5.2,3.5),'xx-small','x-small','small',1.0,6],
+           "A5":[(6.8,4.5),'x-small','small','medium',1.5,8],
+           "A4":[(10,6.8),'small','medium','large',2.0,9]}
+
 #list the species we want graphing from the current data output of the model
 #speciesNames = ("SO SO2 S2 N NH NH2 NH3 HNC NO NO2 OCN HNCO HCS O2 H2O").split()
 speciesNameLists = []
-speciesNameLists.append(("SO #SO SO2 #SO2 S2").split())
-speciesNameLists.append(("HS H2S #HS #H2S ").split())
+speciesNameLists.append(("SO SO2 S2 #SO2 #SO").split())
+speciesNameLists.append(("HS H2S #HS #H2S").split())
 speciesNameLists.append(("HCS OCS H2S2 #OCS #H2S2").split())
 speciesNameLists.append(("NH NH2 #NH #NH2").split())
 speciesNameLists.append(("NH3 HNC #NH3 #HNC").split())
@@ -33,6 +39,7 @@ speciesNameLists.append(("CH3 CH4 #CH3 #CH4").split())
 speciesNameLists.append(("C3H2 CH3CCH #C3H2").split())
 speciesNameLists.append(("CO CO2 #CO #CO2").split())
 speciesNameLists.append(("SIC SIH2 #SIC #SIH4").split())
+speciesNameLists.append(("CL HCL MG #HCL").split())
 
 speciesiceNameLists = []
 speciesiceNameLists.append(("SO SO2 S2").split())##SO #SO2
@@ -50,19 +57,33 @@ speciesiceNameLists.append(("CH3 CH4").split())# #CH3 #CH4
 speciesiceNameLists.append(("C3H2 CH3CCH").split())
 speciesiceNameLists.append(("CO CO2").split())# #CO #CO2
 speciesiceNameLists.append(("SIC SIH2").split())# #SIC #HCN
+speciesiceNameLists.append(("CL HCL MG").split())# #SIC #HCN
 
 varyfactor = [0.25, 0.5, 1, 2, 4]
 Linestles = [(0,(3,10,1,10)),(0,(3,5,1,5,1,5)),(0,()),(0,(3,5,1,5)),(0,(3,1,1,1))]
 
 switch=1
+ice = True
+papersize = "A4"
+imgparams=imgsize[papersize]
 columnpath = "../VaryFromSolar/outputfiles"+str(switch)+"/"
+if ice:
+    plotspath = "../VaryFromSolar/"+papersize+"SepPlots"+str(switch)
+else:
+    plotspath = "../VaryFromSolar/"+papersize+"NoIcePlots"+str(switch)
 
+if os.path.isdir(plotspath) is not True:
+    os.mkdir(plotspath)
+
+pf.plt.rcParams['xtick.labelsize']=imgparams[5]
+pf.plt.rcParams['ytick.labelsize']=imgparams[5]
 #fig,axes=pf.plt.subplots(len(elements),len(varyfactor),figsize=(16,9))
 #fig,axes=pf.plt.subplots(figsize=(16,9))#len(elements),len(varyfactor),figsize=(16,9))
 #axes=axes.flatten()
 #i=0
 
-for m , speciesNames in enumerate(speciesNameLists):
+#for m , speciesNames in enumerate(speciesNameLists):
+def plotchem(speciesNames):
     p=0
     for k, e in enumerate(elements):
         i=0
@@ -70,7 +91,7 @@ for m , speciesNames in enumerate(speciesNameLists):
         specfactor = []
         title = "Varying " + e[0]
         #aiming to have 3 panes stacked vertically
-        fig,axes=pf.plt.subplots(figsize=(16,9), sharey=True,num=p,clear=True)
+        fig,axes=pf.plt.subplots(figsize=imgparams[0], num=p,clear=True)
         p=p+1
         #figcombo,axescombo=pf.plt.subplots(figsize=(16,9), sharey=True,num=p,clear=True)
         #p=p+1
@@ -119,7 +140,7 @@ for m , speciesNames in enumerate(speciesNameLists):
             
             tnpp2 = timenp2 + timenp[-1]
             t = np.append(timenp,tnpp2)
-            axis,rtist0=pf.plot_species(speciesNames,t,abundances,axes,ls=Linestles[j],lab=lb)#ax=axes[i])
+            axis,rtist0=pf.plot_species(speciesNames,t,abundances,axes,ls=Linestles[j],lab=lb,lw=imgparams[4],ncol=6)#ax=axes[i])
             #axiscombo,rtist0=pf.plot_species(speciesNames,t,abundances,axescombo,ls=Linestles[j],lab=lb)#ax=axes[i])
             
             # plot phase2 on its own
@@ -131,88 +152,24 @@ for m , speciesNames in enumerate(speciesNameLists):
             
             
         axes.set(xscale='linear',yscale='log',ylim=(1e-18,1e-3),xlim=(1e0,timenp[-1]))
-        axes.set_xlabel('Time / Myears')
+        axes.set_xlabel('Time / Myears',fontsize=imgparams[2])
         axes.ticklabel_format(axis='x',useMathText=True)
-        axes.set_ylabel('X/H')
-        axes.set_title(title+" phase1")
-        axes.legend(loc='upper left',fontsize='small')
-        fig.savefig("../VaryFromSolar/SepPlots"+str(switch)+"/phase1plot"+e[0]+str(m)+".png",dpi=300)
+        axes.set_ylabel('X/H',fontsize=imgparams[2])
+        axes.set_title(title+" phase1",fontsize=imgparams[3])
+        axes.legend(loc='upper left',fontsize=imgparams[1])
+        fig.savefig(plotspath+"/phase1plot"+e[0]+"_"+speciesNames[0]+".png",dpi=300)
         
         axes.set(xscale='linear',yscale='log',ylim=(1e-18,1e-3),xlim=(1e0,6.5e6))#t[-1]))
-        axes.set_title(title+" phase1&2")
-        fig.savefig("../VaryFromSolar/SepPlots"+str(switch)+"/comboplot"+e[0]+str(m)+".png",dpi=300)
+        axes.ticklabel_format(axis='x',useMathText=True)
+        axes.set_title(title+" phase1&2",fontsize=imgparams[3])
+        fig.savefig(plotspath+"/comboplot"+e[0]+"_"+speciesNames[0]+".png",dpi=300)
 
         axes.set(xscale='linear',yscale='log',ylim=(1e-18,1e-3),xlim=(phase2startt,phase2startt+0.3e6))
-        axes.set_title(title+" phase2")
-        fig.savefig("../VaryFromSolar/SepPlots"+str(switch)+"/phase2plot"+e[0]+str(m)+".png",dpi=300)
+        axes.ticklabel_format(axis='x',useMathText=True)
+        axes.set_title(title+" phase2",fontsize=imgparams[3])
+        fig.savefig(plotspath+"/phase2plot"+e[0]+"_"+speciesNames[0]+".png",dpi=300)
 
         
-        #axescombo.set(xscale='linear',yscale='log',ylim=(1e-18,1e-3),xlim=(1e0,6.5e6))#t[-1]))
-        #axescombo.set_xlabel('Time / Myears')
-        #axescombo.ticklabel_format(axis='x',useMathText=True)
-        #axescombo.set_ylabel('X/H')
-        #axescombo.set_title(title+" phase1&2")
-        #axescombo.legend(loc='upper left',fontsize='small')
-        #figcombo.savefig("../VaryFromSolar/SepPlots"+str(switch)+"/comboplot"+e[0]+str(m)+".png",dpi=300)
-        
-        
-        #axesp2.set(xscale='linear',yscale='log',ylim=(1e-18,1e-3),xlim=(phase2startt,phase2startt+0.3e6))
-        #axisp2.set_ylabel('X/H')
-        #axisp2.set_xlabel('Time / Myears')
-        #axisp2.ticklabel_format(axis='x',useMathText=True)
-        #axesp2.legend(loc='upper left',fontsize='small')
-        #axesp2.set_title(title+" phase2")
-        #figp2.savefig("../VaryFromSolar/SepPlots"+str(switch)+"/phase2plot"+e[0]+str(m)+".png",dpi=300)
-
-        #axes[1].set(xscale='log',yscale='log',ylim=(1e-18,1e-3),xlim=(timenp[-1],2e7))
-        #pf.plt.subplots_adjust(wspace=0.0)
-        #the single plot per page version
-        #axes.text(.02,0.98,e[0],horizontalalignment="left",verticalalignment="top",transform=axes.transAxes)
-        #axes[3].text(.02,0.98,"Your Row",horizontalalignment="left",verticalalignment="top",transform=axes[3].transAxes)
-        #pf.plt.clf()
-        
-#        p=p+1
-#Separate out the phase 2 graph
-#        fig,axes=pf.plt.subplots(figsize=(16,9), sharey=True,num=p,clear=True)
-#        for j , factor in enumerate(varyfactor):
-#            #pick species, any number is fine
-#            #title = ""
-#            lb=False
-#            #phase 2 display
-#            if factor == 1 : 
-#                collfile = columnpath + "phase2-fullCtrl.dat"
-#                lb=True
-#                #title = "Ctrl"
-#            else: 
-#                collfile = columnpath + "phase2-full"+e[0]+ "-" + str(factor).replace('.','_')+".dat"
-#                lb=False
-#                #title = "Varying " + e[0]#+str(factor)
-#      		#call read_uclchem. 
-#            time2,dens2,temp,abundances2=pf.read_uclchem(collfile,speciesNames)
-#            
-#      		#plot species and save to test.png, alternatively send dens instead of time.
-#            axis,rtist2=pf.plot_species(speciesNames,time2,abundances2,axes,ls=Linestles[j],lab=lb)#ax=axes[i])
-#          
-#          		#plot species returns the axis so we can further edit
-#            #axis.set(xscale='log',ylim=(1e-18,1e-3),xlim=(1e0,6e6))
-#            #axis.set_title(title)
-#            #axis.legend(loc='best')
-#            
-#    
-#        #axes[1].set_title(title+" phase1")
-#        axes.set(xscale='log',yscale='log',ylim=(1e-18,1e-3),xlim=(1e0,2e6))
-#        axis.set_ylabel('X/H')
-#        axis.set_xlabel('Time / Myears')
-#        axes.legend(loc='upper left',fontsize='small')
-#        axes.set_title(title+" phase2")
-#        #axes[1].legend(loc='best')
-#        axes[0].text(.02,0.98,e[0],horizontalalignment="left",verticalalignment="top",transform=axes[0].transAxes)
-#        pf.plt.subplots_adjust(wspace=0.0)
-#        #the single plot per page version
-#        #axes.text(.02,0.98,e[0],horizontalalignment="left",verticalalignment="top",transform=axes.transAxes)
-#        #axes[3].text(.02,0.98,"Your Row",horizontalalignment="left",verticalalignment="top",transform=axes[3].transAxes)
-#        fig.savefig("../VaryFromSolar/SepPlots"+str(switch)+"/phase2plot"+e[0]+str(m)+".png",dpi=300)
-#        pf.plt.clf()
 
     p=p+1
     for k, e in enumerate(elements):
@@ -220,7 +177,7 @@ for m , speciesNames in enumerate(speciesNameLists):
         iprev = i
         specfactor = []
         #aiming to have 3 panes stacked vertically
-        fig,axes=pf.plt.subplots(figsize=(16,9),num=p,clear=True)
+        fig,axes=pf.plt.subplots(figsize=imgparams[0],num=p,clear=True)
         for j , factor in enumerate(varyfactor):
             #pick species, any number is fine
             title = ""
@@ -239,16 +196,16 @@ for m , speciesNames in enumerate(speciesNameLists):
             time3,dens3,temp3,abundances3=pf.read_uclchem(collfile,speciesNames)
       
       		#plot species and save to test.png, alternatively send dens instead of time.
-            axis,rtist=pf.plot_species(speciesNames,time3,abundances3,axes,ls=Linestles[j],lab=lb)#ax=axes[i])
+            axis,rtist=pf.plot_species(speciesNames,time3,abundances3,axes,ls=Linestles[j],lab=lb,lw=imgparams[4],ncol=6)#ax=axes[i])
           
           		#plot species returns the axis so we can further edit
             axis.set(xscale='linear',yscale='log',ylim=(1e-18,1e-3),xlim=(1e0,3e6))
-            axis.set_ylabel('X/H')
-            axis.set_xlabel('Time / Myears')
+            axis.set_ylabel('X/H',fontsize=imgparams[2])
+            axis.set_xlabel('Time / Myears',fontsize=imgparams[2])
             axis.ticklabel_format(axis='x',useMathText=True)
-            axis.set_title(title+" static")
-            axis.set_title(title)
-            axis.legend(loc='upper left',fontsize='small')
+            axis.set_title(title+" static cloud",fontsize=imgparams[3])
+            #axis.set_title(title)
+            axis.legend(loc='upper left',fontsize=imgparams[1])
             i=i+1
     
         #axes[0].text(.02,0.98,e[0],horizontalalignment="left",verticalalignment="top",transform=axes[0].transAxes)
@@ -256,5 +213,15 @@ for m , speciesNames in enumerate(speciesNameLists):
 #        axes.text(.02,0.98,e[0],horizontalalignment="left",verticalalignment="top",transform=axes.transAxes)
         
         #axes[3].text(.02,0.98,"Your Row",horizontalalignment="left",verticalalignment="top",transform=axes[3].transAxes)
-        fig.savefig("../VaryFromSolar/SepPlots"+str(switch)+"/staticplot"+e[0]+str(m)+".png",dpi=300)
+        fig.savefig(plotspath+"/staticplot"+e[0]+"_"+speciesNames[0]+".png",dpi=300)
         pf.plt.clf()
+
+
+pool = mp.Pool(12)
+if ice:
+    pool.map(plotchem, speciesNameLists)
+else:
+    pool.map(plotchem, speciesiceNameLists)
+pool.close()
+pool.join()
+
