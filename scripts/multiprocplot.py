@@ -35,6 +35,7 @@ speciesNameLists.append(("HCN H2CN #HCN #H2CN").split())
 speciesNameLists.append(("H2O HNO #H2O #HNO").split())
 speciesNameLists.append(("H2O HNO #H2O #HNO").split())
 speciesNameLists.append(("O O2 OH #O #O2 #OH").split())
+speciesNameLists.append(("C CH CH2 #C #CH #CH2").split())# #C #CH #CH2
 speciesNameLists.append(("CH3 CH4 #CH3 #CH4").split())
 speciesNameLists.append(("C3H2 CH3CCH #C3H2").split())
 speciesNameLists.append(("CO CO2 #CO #CO2").split())
@@ -44,7 +45,7 @@ speciesNameLists.append(("CL HCL MG #HCL").split())
 speciesiceNameLists = []
 speciesiceNameLists.append(("SO SO2 S2").split())##SO #SO2
 speciesiceNameLists.append(("HS H2S").split())# #HS #H2S
-speciesiceNameLists.append(("HCS H2S2").split())# #HS #H2S
+speciesiceNameLists.append(("HCS OCS H2S2").split())# #HS #H2S
 speciesiceNameLists.append(("NH NH2").split())##NH #NH2
 speciesiceNameLists.append(("NH3 HNC").split())# #NH3 #HNC
 speciesiceNameLists.append(("NO NO2").split())# #NO #NO2
@@ -62,15 +63,18 @@ speciesiceNameLists.append(("CL HCL MG").split())# #SIC #HCN
 varyfactor = [0.25, 0.5, 1, 2, 4]
 Linestles = [(0,(3,10,1,10)),(0,(3,5,1,5,1,5)),(0,()),(0,(3,5,1,5)),(0,(3,1,1,1))]
 
+bulk=False #set true to run the speciesNAmeLists lists through the mass plot production process False runs a single plot
+
 switch=1
 ice = True
-papersize = "A4"
+papersize = "A6"
+xaslog='log'
 imgparams=imgsize[papersize]
 columnpath = "../VaryFromSolar/outputfiles"+str(switch)+"/"
 if ice:
-    plotspath = "../VaryFromSolar/"+papersize+"SepPlots"+str(switch)
+    plotspath = "../VaryFromSolar/"+papersize+xaslog+"SepPlots"+str(switch)
 else:
-    plotspath = "../VaryFromSolar/"+papersize+"NoIcePlots"+str(switch)
+    plotspath = "../VaryFromSolar/"+papersize+xaslog+"NoIcePlots"+str(switch)
 
 if os.path.isdir(plotspath) is not True:
     os.mkdir(plotspath)
@@ -151,21 +155,24 @@ def plotchem(speciesNames):
             
             
             
-        axes.set(xscale='linear',yscale='log',ylim=(1e-18,1e-3),xlim=(1e0,timenp[-1]))
-        axes.set_xlabel('Time / Myears',fontsize=imgparams[2])
-        axes.ticklabel_format(axis='x',useMathText=True)
+        axes.set(xscale=xaslog,yscale='log',ylim=(1e-18,1e-3),xlim=(1e0,timenp[-1]))
+        axes.set_xlabel('Time / Years',fontsize=imgparams[2])
+        if xaslog == 'linear':
+            axes.ticklabel_format(axis='x',useMathText=True)
         axes.set_ylabel('X/H',fontsize=imgparams[2])
         axes.set_title(title+" phase1",fontsize=imgparams[3])
-        axes.legend(loc='upper left',fontsize=imgparams[1])
+        axes.legend(loc='best',fontsize=imgparams[1])
         fig.savefig(plotspath+"/phase1plot"+e[0]+"_"+speciesNames[0]+".png",dpi=300)
         
-        axes.set(xscale='linear',yscale='log',ylim=(1e-18,1e-3),xlim=(1e0,6.5e6))#t[-1]))
-        axes.ticklabel_format(axis='x',useMathText=True)
+        axes.set(xscale=xaslog,yscale='log',ylim=(1e-18,1e-3),xlim=(1e0,6.5e6))#t[-1]))
+        if xaslog == 'linear':
+            axes.ticklabel_format(axis='x',useMathText=True)
         axes.set_title(title+" phase1&2",fontsize=imgparams[3])
         fig.savefig(plotspath+"/comboplot"+e[0]+"_"+speciesNames[0]+".png",dpi=300)
 
-        axes.set(xscale='linear',yscale='log',ylim=(1e-18,1e-3),xlim=(phase2startt,phase2startt+0.3e6))
-        axes.ticklabel_format(axis='x',useMathText=True)
+        axes.set(xscale=xaslog,yscale='log',ylim=(1e-18,1e-3),xlim=(phase2startt,phase2startt+0.3e6))
+        if xaslog == 'linear':
+            axes.ticklabel_format(axis='x',useMathText=True)
         axes.set_title(title+" phase2",fontsize=imgparams[3])
         fig.savefig(plotspath+"/phase2plot"+e[0]+"_"+speciesNames[0]+".png",dpi=300)
 
@@ -199,13 +206,18 @@ def plotchem(speciesNames):
             axis,rtist=pf.plot_species(speciesNames,time3,abundances3,axes,ls=Linestles[j],lab=lb,lw=imgparams[4],ncol=6)#ax=axes[i])
           
           		#plot species returns the axis so we can further edit
-            axis.set(xscale='linear',yscale='log',ylim=(1e-18,1e-3),xlim=(1e0,3e6))
+            if xaslog == 'linear':
+                axis.set(xscale=xaslog,yscale='log',ylim=(1e-18,1e-3),xlim=(1e0,3e6))
+                axis.ticklabel_format(axis='x',useMathText=True)
+            else:
+                axis.set(xscale=xaslog,yscale='log',ylim=(1e-18,1e-3),xlim=(1e0,time3[-1]))
             axis.set_ylabel('X/H',fontsize=imgparams[2])
-            axis.set_xlabel('Time / Myears',fontsize=imgparams[2])
-            axis.ticklabel_format(axis='x',useMathText=True)
+            axis.set_xlabel('Time / Years',fontsize=imgparams[2])
+            
+            
             axis.set_title(title+" static cloud",fontsize=imgparams[3])
             #axis.set_title(title)
-            axis.legend(loc='upper left',fontsize=imgparams[1])
+            axis.legend(loc='best',fontsize=imgparams[1])
             i=i+1
     
         #axes[0].text(.02,0.98,e[0],horizontalalignment="left",verticalalignment="top",transform=axes[0].transAxes)
@@ -217,11 +229,14 @@ def plotchem(speciesNames):
         pf.plt.clf()
 
 
-pool = mp.Pool(12)
-if ice:
-    pool.map(plotchem, speciesNameLists)
+if bulk:
+    pool = mp.Pool(12)
+    if ice:
+        pool.map(plotchem, speciesNameLists)
+    else:
+        pool.map(plotchem, speciesiceNameLists)
+    pool.close()
+    pool.join()
 else:
-    pool.map(plotchem, speciesiceNameLists)
-pool.close()
-pool.join()
+    plotchem(speciesiceNameLists[10])
 
