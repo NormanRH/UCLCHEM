@@ -63,10 +63,10 @@ speciesiceNameLists.append(("CL HCL MG").split())# #SIC #HCN
 varyfactor = [0.25, 0.5, 1, 2, 4]
 Linestles = [(0,(3,10,1,10)),(0,(3,5,1,5,1,5)),(0,()),(0,(3,5,1,5)),(0,(3,1,1,1))]
 
-bulk=False #set true to run the speciesNAmeLists lists through the mass plot production process False runs a single plot
+bulk=True #set true to run the speciesNAmeLists lists through the mass plot production process False runs a single plot
 
 switch=1
-ice = True
+ice = False
 papersize = "A6"
 xaslog='log'
 imgparams=imgsize[papersize]
