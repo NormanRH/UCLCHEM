@@ -33,7 +33,6 @@ speciesNameLists.append(("NO NO2 #NO #NO2").split())
 speciesNameLists.append(("N HNCO #N #HNCO").split())
 speciesNameLists.append(("HCN H2CN #HCN #H2CN").split())
 speciesNameLists.append(("H2O HNO #H2O #HNO").split())
-speciesNameLists.append(("H2O HNO #H2O #HNO").split())
 speciesNameLists.append(("O O2 OH #O #O2 #OH").split())
 speciesNameLists.append(("C CH CH2 #C #CH #CH2").split())# #C #CH #CH2
 speciesNameLists.append(("CH3 CH4 #CH3 #CH4").split())
@@ -64,11 +63,12 @@ varyfactor = [0.25, 0.5, 1, 2, 4]
 Linestles = [(0,(3,10,1,10)),(0,(3,5,1,5,1,5)),(0,()),(0,(3,5,1,5)),(0,(3,1,1,1))]
 
 bulk=False #set true to run the speciesNAmeLists lists through the mass plot production process False runs a single plot
+nplot = 10 #list to plot
 
 switch=1
-ice = True
+ice = False
 papersize = "A6"
-xaslog='log'
+xaslog='linear'
 imgparams=imgsize[papersize]
 columnpath = "../VaryFromSolar/outputfiles"+str(switch)+"/"
 if ice:
@@ -238,5 +238,8 @@ if bulk:
     pool.close()
     pool.join()
 else:
-    plotchem(speciesiceNameLists[10])
+    if ice:
+        plotchem(speciesNameLists[nplot])
+    else:
+        plotchem(speciesiceNameLists[nplot])
 
