@@ -5,11 +5,11 @@ import numpy as np
 from plotfunctions import *
 
 #pick species, any number is fine
-speciesNames=["H2","CO","H2O","CH3OH","#H2O","#CO","#CH3OH"]
+speciesNames=["H2S2"] #"H2","CO","H2O","CH3OH","#H2O","#CO","#CH3OH"]
 input_file="../VaryFromSolar/outputfiles1/phase1-fullC-2.dat"
 input_file2="../VaryFromSolar/outputfiles1/phase2-fullC-2.dat"
 plot_file="../VaryFromSolar/KeyAndOtherPlots1/tempdensPlot.png"
-input_file3="../VaryFromSolar/outputfiles1/static-fullC-2.dat"
+input_file3="../VaryFromSolar/outputfiles1/static-fullS-2.dat"
 #plot_file="../VaryFromSolar/KeyAndOtherPlots1/statictempdensPlot.png"
 
 

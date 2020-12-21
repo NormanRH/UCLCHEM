@@ -8,7 +8,9 @@ Created on Sat Jul 18 11:30:03 2020
 
 #Acknowledgement to Marcus Keil and Jon Holdship 13/03/2020
 #Examples of a simple grid of models run in parallel
+
 from __future__ import print_function
+import os
 import uclchem
 import numpy as np
 import pandas as pd
@@ -34,10 +36,21 @@ def run_uclchem(param_dict):
     return abunds
 
 #path for output direcoties
+model = "UCLCHEM"
 switch=1
-intermediatepath="../VaryFromSolar/intermediatefiles"+str(switch)+"/"
-outputpath = "../VaryFromSolar/outputfiles"+str(switch)+"/"
-columnpath = "../VaryFromSolar/columnfiles"+str(switch)+"/"
+basepath="../VaryFromSolar"+model+"/"
+if os.path.isdir(basepath) is not True:
+    os.mkdir(basepath)
+
+intermediatepath="../VaryFromSolar"+model+"/intermediatefiles"+str(switch)+"/"
+if os.path.isdir(intermediatepath) is not True:
+    os.mkdir(intermediatepath)
+outputpath = "../VaryFromSolar"+model+"/outputfiles"+str(switch)+"/"
+if os.path.isdir(outputpath) is not True:
+    os.mkdir(outputpath)
+columnpath = "../VaryFromSolar"+model+"/columnfiles"+str(switch)+"/"
+if os.path.isdir(columnpath) is not True:
+    os.mkdir(columnpath)
 #basic set of parameters we'll use for this grid. 
 #problem of choice of species and keeping track, need representative set of species but can we get 
 #UCLChem to write files for susequent analysis we really want to output the 
@@ -107,9 +120,36 @@ ParameterDictP3 = {    "phase": 1,
 
 #Element ids and initial values
 # This part can be substituted with any choice of grid
-elements=[["C","fc",2.6e-04], ["N","fn",6.1e-05], ["O","fo",4.6e-04], ["S","fs",1.318e-05],
-           ["Mg","fmg",3.981e-05], ["Si","fsi",1.0e-07],["Cl","fcl",3.162e-07],["F","ff",3.6e-08]]
 
+ModelelementsDict = { "UCLCHEM":[["C","fc",2.6e-04],
+                          ["N","fn",6.1e-05],
+                          ["O","fo",4.6e-04],
+                          ["S","fs",1.318e-05],
+                          ["Mg","fmg",3.981e-05],
+                          ["Si","fsi",1.0e-07],
+                          ["Cl","fcl",3.162e-07],
+                          ["F","ff",3.6e-08]],
+            
+            "Wakelam":[["C","fc",1.2e-04],
+                      ["N","fn",7.6e-05],
+                      ["O","fo",2.56e-04],
+                      ["S","fs",8.0e-08],
+                      ["Mg","fmg",0.0],
+                      ["Si","fsi",0.0],
+                      ["Cl","fcl",1.8e-08],
+                      ["F","ff",6.68e-09]],
+            
+            
+            "NavAlm":[["C","fc",1.7e-04],
+                      ["N","fn",6.2e-05],
+                      ["O","fo",2.4e-04],
+                      ["S","fs",1.5e-05],
+                      ["Mg","fmg",7.0e-09],
+                      ["Si","fsi",8.0e-09],
+                      ["Cl","fcl",1.0e-09],
+                      ["F","ff",6.68e-09]]
+            }
+elements = ModelelementsDict[model]
 varyfactor = [0.25, 0.5, 1, 2, 4]#1 is the control
 # here we just combine various initial and final densities into an easily iterable array
 #initialTempGrid = np.linspace(50, 300, 6)
@@ -126,7 +166,10 @@ e.to_csv("elements.csv",index=False)
 models=[]
 models2=[]
 models3=[]
-
+for k, e in enumerate(elements):
+    ParameterDictP1[e[1]]=e[2]
+    ParameterDictP2[e[1]]=e[2]
+    ParameterDictP3[e[1]]=e[2]
 #we'll number our models so store the parameters we used in a list
 for k, e in enumerate(elements):
     for j , factor in enumerate(varyfactor):
